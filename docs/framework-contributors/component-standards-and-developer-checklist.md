@@ -98,6 +98,27 @@ This document defines the visual, behavioural, and structural standards for Form
 -  Components handle **model changes safely** (rebinding, fallback states) without breaking visually.
 -  **Runtime errors never break the UI** — components always fall back to a stable, visible state.
 
+
+---
+
+### **9. Theme-Level Component Specific Settings**
+
+- Components must support **theme-level component specific settings**.
+- Theme defaults must apply consistently across **Form Builder** and **Runtime**.
+- Components must not rely on hardcoded values when theme-level configuration exists.
+
+---
+
+### **10. Entity Configuration Inheritance (Formatting Defaults)**
+
+- Components bound to entity properties must **inherit formatting defaults** from the **Entity Configuration layer**.
+- This includes formatting such as:
+  - Date format
+  - Prefix / suffix
+  - Thousand separator
+  - Number of decimal places
+- Component-level formatting overrides are supported, but inheritance must be the default behaviour.
+
 ## 2. WYSIWYG Components.
 
 ### **Core Requirement**
@@ -477,3 +498,60 @@ If **NO**, move it to a secondary tab (Appearance, Data, Advanced, etc.).
 
 Always remember to reference other components to get a general feel of their layouts if you need additional guidance. 
 
+
+## 9. Theme-Level Component Specific Settings
+
+### **Purpose of the Feature**
+
+To encourage consistency and reduce repeated configuration, components must support **theme-level component specific settings**.  
+These settings allow the platform to define default styling/behaviour centrally, ensuring a consistent experience across all forms.
+
+### **Core Requirement**
+
+Components must:
+- Respect theme-level defaults by default
+- Render consistently in both:
+  - **Form Builder**
+  - **Runtime**
+- Avoid hardcoded behaviour where theme config is available
+
+### **Developer Pre-QA Summary**
+
+Before handing off to QA, developers must confirm:
+1. Theme-level component specific settings apply correctly to the component.
+2. Theme settings affect the component consistently in **Builder** and **Runtime**.
+3. Component behaviour does not rely on hardcoded values where theme configuration exists.
+
+## 10. Entity Configuration Inheritance (Formatting Defaults)
+
+### **Purpose of the Feature**
+
+To encourage consistency and follow the **DRY principle**, formatting-related configuration can be defined centrally at the **Entity Configuration layer**.  
+Any form component binding to those entity properties should therefore **inherit those formatting settings by default**.
+
+This ensures formatting for things like numbers and dates stays consistent across all forms without requiring manual reconfiguration in every component.
+
+### **Core Requirement**
+
+When a component binds to an entity property that contains formatting configuration, it must automatically inherit those values by default.
+
+This includes (but is not limited to):
+- Date format
+- Prefix
+- Suffix
+- Thousand separator
+- Number of decimal places
+
+### **Expected Behaviour**
+- Inheritance must be the default behaviour for bound fields.
+- Component-level overrides are supported where explicitly configured.
+- Inherited formatting must apply consistently in both:
+  - **Form Builder**
+  - **Runtime**
+
+### **Developer Pre-QA Summary**
+
+Before handing off to QA, developers must confirm:
+1. Components bound to entity properties inherit formatting defaults from the **Entity Configuration layer**.
+2. Inherited formatting is applied consistently in **Builder** and **Runtime**.
+3. Overrides work correctly when explicitly set, but inheritance remains the default behaviour.
