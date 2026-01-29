@@ -1,11 +1,11 @@
 ---
-title: Mac OS Setup
+title: Mac OS / Linux Setup
 sidebar_position: 2
 ---
 
 # Mac OS Setup
 
-This guide explains how to set up your Mac OS environment to run Shesha applications locally, including both the backend (.NET) and frontend (React.js), with Microsoft SQL Server running in Docker.
+This guide explains how to set up your Mac OS / Linux environment to run Shesha applications locally, including both the backend (.NET) and frontend (React.js), with Microsoft SQL Server running in Docker.
 
 ## Tools You Need
 
@@ -15,7 +15,7 @@ This guide explains how to set up your Mac OS environment to run Shesha applicat
 - **Node.js 22** – Required to run the Shesha frontend (React.js).
 - **SQL-Package** – Imports the starter database from a `.bacpac` file.
 - **Visual Studio Code** (or an AI-infused fork) – Recommended IDE for editing both frontend and backend code. *(Note: Visual Studio is no longer supported on Mac OS)*.
-- **Azure Data Studio** – To connect to SQL Server, browse databases, and run queries.
+- **Database Client** - https://database-client.com VS Code extension for connecting to db
 
 > **Tip:** Some commands may require administrator privileges. In that case, prefix them with:
 > ```bash
