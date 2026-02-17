@@ -33,17 +33,16 @@ Once Docker is running, you can use `docker` commands in the terminal to create,
 For more details:  
 [Quickstart: Install and connect to SQL Server in Docker](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver17&tabs=cli)
 
-
 ### 1.1 Pull SQL Server Image
 ```bash
-docker pull mcr.microsoft.com/mssql/server:2022-latest
+docker pull --platform linux/amd64 mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 ### 1.2 Run the Container
 Once the SQL Server image is downloaded, create a container:
 
 ```bash
-docker run -d -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=@123Shesha" \
+docker run --platform linux/amd64 -d -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=@123Shesha" \
 -p 1433:1433 --name SQL_Server_Docker \
 mcr.microsoft.com/mssql/server:2022-latest
 ```
