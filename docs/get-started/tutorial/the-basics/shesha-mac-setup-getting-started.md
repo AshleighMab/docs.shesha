@@ -15,9 +15,10 @@ This guide explains how to set up your Mac OS environment to run Shesha applicat
 - **Node.js 22** – Required to run the Shesha frontend (React.js).
 - **SQL-Package** – Imports the starter database from a `.bacpac` file.
 - **Visual Studio Code** (or an AI-infused fork) – Recommended IDE for editing both frontend and backend code. *(Note: Visual Studio is no longer supported on Mac OS)*.
-- **Azure Data Studio** – To connect to SQL Server, browse databases, and run queries.
+- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. <https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2>
 
 > **Tip:** Some commands may require administrator privileges. In that case, prefix them with:
+>
 > ```bash
 > sudo ...
 > ```
@@ -97,7 +98,7 @@ Run:
 sqlpackage /Action:Import /SourceFile:"./Downloads/<OrganisationName.ProjectName>/<ProjectName>.bacpac" /TargetConnectionString:"Server=localhost,1433;Initial Catalog=ProjectName;Persist Security Info=False;User ID=sa;Password=@123Shesha;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;"
 ```
 
-Once complete, open Azure Data Studio and verify that the `ProjectName` database exists.
+Once complete, use your choice of SQL Server client and verify that the `ShaProjectName` database exists.
 
 ---
 
