@@ -1,11 +1,11 @@
 ---
-title: Mac OS Setup
+title: Mac OS / Linux Setup
 sidebar_position: 2
 ---
 
 # Mac OS Setup
 
-This guide explains how to set up your Mac OS environment to run Shesha applications locally, including both the backend (.NET) and frontend (React.js), with Microsoft SQL Server running in Docker.
+This guide explains how to set up your Mac OS / Linux environment to run Shesha applications locally, including both the backend (.NET) and frontend (React.js), with Microsoft SQL Server running in Docker.
 
 ## Tools You Need
 
