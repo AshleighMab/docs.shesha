@@ -15,7 +15,7 @@ This guide explains how to set up your Mac OS / Linux environment to run Shesha 
 - **Node.js 22** – Required to run the Shesha frontend (React.js).
 - **SQL-Package** – Imports the starter database from a `.bacpac` file.
 - **Visual Studio Code** (or an AI-infused fork) – Recommended IDE for editing both frontend and backend code. *(Note: Visual Studio is no longer supported on Mac OS)*.
-- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. <https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2>
+- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. [https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2)
 
 > **Tip:** Some commands may require administrator privileges. In that case, prefix them with:
 >

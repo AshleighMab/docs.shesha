@@ -16,7 +16,7 @@ This guide explains how to set up your environment to run Shesha applications lo
 - **SQL-Package** – Imports the starter database from a `.bacpac` file.
 - **Visual Studio Code** (or an AI-infused fork) – Recommended IDE for editing both frontend and backend code. *(Note: Visual Studio is no longer supported on Mac OS)*.
 - **Microsoft Visual Studio** - Recommended IDE for editing backend code on Windows.
-- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. <https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2>
+- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. [https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2)
 
 > **Tip:** Some commands may require administrator privileges. In that case, prefix them with `sudo`. On Windows, you may need to enable 'sudo' in your settings first if it is not already available in your CLI shell.
 >
