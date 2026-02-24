@@ -15,9 +15,10 @@ This guide explains how to set up your Mac OS / Linux environment to run Shesha 
 - **Node.js 22** – Required to run the Shesha frontend (React.js).
 - **SQL-Package** – Imports the starter database from a `.bacpac` file.
 - **Visual Studio Code** (or an AI-infused fork) – Recommended IDE for editing both frontend and backend code. *(Note: Visual Studio is no longer supported on Mac OS)*.
-- **Database Client** - https://database-client.com VS Code extension for connecting to db
+- **Database Client Extension on VSCode** – To connect to SQL Server, browse databases, and run queries. [Download extension](https://marketplace.visualstudio.com/items?itemName=cweijan.vscode-mysql-client2)
 
 > **Tip:** Some commands may require administrator privileges. In that case, prefix them with:
+>
 > ```bash
 > sudo ...
 > ```
@@ -30,17 +31,16 @@ Once Docker is running, you can use `docker` commands in the terminal to create,
 For more details:  
 [Quickstart: Install and connect to SQL Server in Docker](https://learn.microsoft.com/en-us/sql/linux/quickstart-install-connect-docker?view=sql-server-ver17&tabs=cli)
 
-
 ### 1.1 Pull SQL Server Image
 ```bash
-docker pull mcr.microsoft.com/mssql/server:2022-latest
+docker pull --platform linux/amd64 mcr.microsoft.com/mssql/server:2022-latest
 ```
 
 ### 1.2 Run the Container
 Once the SQL Server image is downloaded, create a container:
 
 ```bash
-docker run -d -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=@123Shesha" \
+docker run --platform linux/amd64 -d -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=@123Shesha" \
 -p 1433:1433 --name SQL_Server_Docker \
 mcr.microsoft.com/mssql/server:2022-latest
 ```
@@ -98,7 +98,7 @@ Run:
 sqlpackage /Action:Import /SourceFile:"./Downloads/<OrganisationName.ProjectName>/<ProjectName>.bacpac" /TargetConnectionString:"Server=localhost,1433;Initial Catalog=ProjectName;Persist Security Info=False;User ID=sa;Password=@123Shesha;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;"
 ```
 
-Once complete, open Azure Data Studio and verify that the `ProjectName` database exists.
+Once complete, use your choice of SQL Server client and verify that the `ShaProjectName` database exists.
 
 ---
 
