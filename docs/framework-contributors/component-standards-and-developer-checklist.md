@@ -44,6 +44,8 @@ This document defines the visual, behavioural, and structural standards for Form
 -  Permissions moved from Security tab → **padlock buttons** on Visible & Editable properties.
 -  Clicking padlock opens the permissions dialog.
 -  Padlock icon turns **primary colour** when permissions are applied.
+-  Permissions act as a **restriction layer only** (can restrict, never promote).
+-  Permissions are evaluated **after Explicit / Inherited / JS values resolve**.
 -  Visibility icons appear correctly on the component:
     -  Eye = manually hidden
     -  Padlock = hidden by permissions
@@ -218,6 +220,121 @@ Each of these properties now includes a **padlock button** that opens a permissi
         
 #### Visual State Indicator
 - If **any permissions are applied**, the padlock icon switches to a **primary-coloured state** to visually confirm that custom permissions exist.
+
+---
+
+### **Permission Resolution Logic (Authoritative Behaviour)**
+
+Permissions act strictly as a **restriction layer**.
+
+They:
+- Can restrict (downgrade)
+- Cannot promote (upgrade)
+- Cannot override explicit structural modes
+
+Structural configuration (**Explicit / Inherited / JS**) always resolves first.  
+Permissions are evaluated last as the final gate.
+
+---
+
+### **Editable – Final Resolution Rules**
+
+#### Step 1 – Resolve Base Mode
+
+The Editable state must first resolve to a base mode:
+
+- Explicit `Editable`
+- Explicit `ReadOnly`
+- `Inherited` (resolved from parent container or form mode)
+- JS-calculated result
+
+This produces a resolved base mode.
+
+---
+
+#### Step 2 – Apply Permissions (Only If Editable)
+
+If the resolved base mode is:
+
+**`ReadOnly`**
+- Final result = `ReadOnly`
+- Permissions do not apply
+- Structural mode takes precedence
+
+**`Editable`**
+- Permissions are evaluated:
+  - If allowed → Final = `Editable`
+  - If forbidden → Final = `ReadOnly`
+
+Permissions can downgrade `Editable` to `ReadOnly`.  
+They can never upgrade `ReadOnly` to `Editable`.
+
+---
+
+#### JS Enforcement Rule
+
+If JS determines:
+
+```
+return true; // Editable
+```
+
+Permissions must still be evaluated afterwards.
+
+Final resolution order:
+
+1. Resolve explicit / inherited / JS mode
+2. Apply permission restriction
+3. Produce final state
+
+JS cannot bypass permissions.
+
+---
+
+### **Visible – Final Resolution Rules**
+
+The same principle applies to visibility.
+
+#### Step 1 – Resolve Base Visibility
+
+Base visibility resolves first:
+
+- Explicit `Visible`
+- Inherited result
+- JS-calculated visibility
+
+---
+
+#### Step 2 – Apply Permissions (Only If Visible = true)
+
+If resolved base visibility is:
+
+**`false`**
+- Component remains hidden
+- Permissions do not apply
+- Structural visibility takes precedence
+
+**`true`**
+- Permissions are evaluated:
+  - If allowed → Component visible
+  - If forbidden → Component hidden
+
+Permissions can hide a component.  
+They cannot force a hidden component to become visible.
+
+---
+
+### **Resolution Priority Order**
+
+For both Editable and Visible, the evaluation order is:
+
+1. Explicit configuration
+2. Inherited configuration
+3. JS-calculated result
+4. Permission restriction (final gate)
+
+Permissions are always evaluated last.
+
 
 ### **Visibility Status Icon (Blue Circle Icon on the Component)**
 
