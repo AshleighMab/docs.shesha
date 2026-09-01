@@ -1,23 +1,46 @@
+---
+sidebar_label: SetFormData
+title: SetFormData
+---
+
 # SetFormData
 
-This function is used to update the [form data](/docs/front-end-basics/configured-views/client-side-scripting/shesha-objects/data) as part of [executing a script](/docs/front-end-basics/configured-views/action-configurations#execute-script-accepts-javascript-expressions).
+`setFormData` is a script variable that updates the form's [data](/docs/front-end-basics/configured-views/client-side-scripting/shesha-objects/data) from inside a script, either merging new values in or replacing the data outright.
 
-This function signature is a `TypeScript arrow function` that takes a single parameter, which is an object with two properties: `values` and `mergeValues`. Here's an explanation of each part:
+:::warning Deprecated
+`setFormData` is marked `@deprecated`. Refer to [`form.setFieldsValue`](/docs/front-end-basics/javascript-api/form) to merge values, or `form.clearFieldsValue()` to reset the form's data, instead of calling `setFormData` directly. It still works on this version so you can recognise it in existing scripts, but new scripts should use the `form` API instead.
+:::
 
-- Function Parameters:
-  `{ values: object, mergeValues: boolean }`: This specifies an object parameter with two properties.
-  values: It expects an object `(values: object)`, indicating that you should pass an object as the values property.
-  mergeValues: It expects a boolean (mergeValues: boolean), indicating that you should pass a boolean as the mergeValues property.
+---
 
-- Arrow Function Return Type:
-  => `void`: This part indicates that the function returns `void`, meaning it does not return any value.
+## Signature
 
-Putting it all together, the `SetFormData` function is expected to be called with an object parameter having two properties:<br/>
+```typescript
+setFormData: (payload: { values: object, mergeValues: boolean }) => void
+```
 
-- `values`: An object containing data that needs to be set as form data.
-- `mergeValues`: A boolean flag indicating whether to merge the new values with existing form data or replace them entirely.
+- `values`: an object containing the data to set.
+- `mergeValues`: `true` merges `values` into the form's existing data; `false` replaces the form's data entirely with `values`.
 
-## Setting a single value
+---
+
+## Merge Behaviour
+
+How `values` is applied depends on `mergeValues`, and the merge itself has a few non-obvious rules worth knowing before you rely on it:
+
+- When `mergeValues` is `true`, `values` is deep-merged into the form's existing data - nested objects are merged property by property rather than the whole nested object being replaced.
+- Arrays and date values inside `values` always replace the existing value outright, even while merging. They are never merged element by element.
+- Setting a field to `null` or `undefined` inside `values` clears that field, even while merging - it is not treated as "no value provided".
+- When `mergeValues` is `false`, the form's data is replaced entirely: any field not present in `values` is reset to its initial value rather than left as it was. `form.clearFieldsValue()` is implemented as exactly this - `setFormData({ values: {}, mergeValues: false })`.
+- Calling `setFormData({ values: {}, mergeValues: true })` - an empty `values` object with merging on - is a no-op. It returns immediately without updating the form's data or firing change events.
+
+---
+
+## Examples
+
+**Form type to use:** Any form type - `setFormData` is available anywhere standard script variables are.
+
+**Example - Set a single value:**
 
 ```javascript
 setFormData({
@@ -28,7 +51,7 @@ setFormData({
 });
 ```
 
-## Setting multiple values
+**Example - Set multiple values at once:**
 
 ```javascript
 setFormData({
@@ -40,7 +63,7 @@ setFormData({
 });
 ```
 
-## Setting nested values
+**Example - Set a nested value:**
 
 ```javascript
 setFormData({
@@ -54,6 +77,9 @@ setFormData({
 });
 ```
 
-# See Also
+---
+
+## See Also
 
 - [Form Data](/docs/front-end-basics/configured-views/client-side-scripting/shesha-objects/data)
+- [Form instance API](/docs/front-end-basics/javascript-api/form)

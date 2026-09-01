@@ -1,8 +1,19 @@
+---
+sidebar_label: Chevron
+title: Chevron
+---
+
 # Chevron
 
-The Chevron is a simple arrow-like symbol (›) that helps users navigate through the application. Think of it as a visual signpost that shows users where they can click or what will happen next.
+The Chevron component displays a row of arrow-shaped stages built from a reference list, with the stage matching the bound property's current value highlighted. Use it to show progress through a fixed sequence of statuses, such as an order's fulfilment pipeline.
 
 ![Image](../Advanced/images/chevron1.png)
+
+:::note Clicking a stage does not change the value
+Each stage is a fully configurable button (the same underlying button component used by Button and Button Group), so clicking one only does whatever action you configure for it - it does not automatically advance the bound property. The highlighted stage is purely a visual match against the property's current value, driven separately from whatever a click does.
+:::
+
+---
 
 ## Properties
 
@@ -11,22 +22,49 @@ The following properties are available to configure the behavior of the componen
 ### Data
 
 #### **Reference List** `object`
-Defines which reference list is used to drive the Chevron items. Ensure the list is properly selected to reflect updates.
+
+Defines which reference list drives the Chevron's stages.
+
+:::warning
+Reselect the reference list if you change any of its items after configuring this component - the item selector below does not update automatically.
+:::
 
 #### **Items** `object`
-A selector for managing specific items from the chosen reference list.
+
+Selects which items from the chosen reference list appear as stages. Selecting an item opens a small per-item builder (shared with Kanban's column items, not Button Group) where you can hide that stage or attach an **Action Configuration** that fires when the stage is clicked.
+
+:::note No per-item icon setting
+There is no icon field in this builder. Each stage's icon is inherited from the icon already configured on that reference list item, and is only shown when **Show Icons** (below, under Appearance) is switched on.
+:::
 
 ___
 
 ### Appearance
 
+#### **Font** `object`
+
+Sets the font (family, size, weight, colour, alignment) applied to each stage's label text.
+
+#### **Dimensions** `object`
+
+Sets the **Width** and **Height** of each stage. There is no min/max width or height, and no Overflow control.
+
+#### **Color Settings**
+
+#### **Color Source** `object`
+
+Controls where each stage's colour comes from:
+
+| Option | Behaviour |
+|---|---|
+| **Primary color** *(default)* | Uses the application theme's primary colour. |
+| **Custom color** | Uses the colour you set in **Active Color** below. |
+| **From reflist item** | Uses the colour configured on each reference list item itself. |
+
+#### **Active Color** `string`
+
+The colour applied to the currently active stage. Only shown when Color Source is set to **Custom color**.
+
 #### **Show Icons** `boolean`
-Toggle visibility of icons next to items.
 
-#### **Color Source** ``object``
-Defines where the color comes from:
-- **Primary color** *(default)*: Uses primary color theme.
-- **Custom color**: Lets you define your own color.
-- **From reflist item**: Dynamically sourced from reference list data.
-
-
+Shows each stage's configured icon alongside its label.

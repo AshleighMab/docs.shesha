@@ -1,69 +1,64 @@
+---
+sidebar_label: Debug Panel
+title: Debug Panel
+---
+
 # Debug Panel
 
-A debug panel is a valuable tool for developers that enhances their ability to diagnose and fix issues in software applications, ultimately leading to more robust and reliable code. It provides a set of features and information that helps developers identify and fix issues in their code.
+The Debug Panel lets you inspect the live state behind a form while you're building or testing it, so you can see exactly what a script or component would actually see - the form's current data, the global state, and every active context - without adding `console.log` calls.
 
-## How to Access
+Shesha actually has two different debug views, not one:
 
-The Debug Panel contains state and information about Form data, Contexts, TableData, etc. This is opened by clicking the `Debug` button next to the `Preview` button on the `form designer`, or by clicking `CTRL + F12` while on the form designer.
+- A read-only panel built into the **Form Designer** canvas.
+- A separate, floating panel available anywhere in the running app, opened with **Ctrl+F12**.
+
+---
+
+## Form Designer Debug Panel
+
+Clicking the bug icon in the Form Designer's toolbar toggles a panel inline in the canvas. It shows the form's current data and each active context as read-only, formatted JSON.
 
 ![Image](./images/context1.png)
 
-## Use of a Debug Panel
+:::note Designer only, read-only
+This panel is only available while editing a form in the Form Designer - it isn't available to end users at runtime, and its values aren't editable here. To inspect and edit values live at runtime, use the Ctrl+F12 panel below instead.
+:::
 
-**Logging and Output:**
+---
 
-- Debug panels often include a logging feature that allows developers to output messages, warnings, errors, and other information from their code. This real-time feedback helps developers understand the flow of their application and identify potential issues.
+## Runtime Debug Panel (Ctrl+F12)
 
-**Variable Inspection:**
+Press **Ctrl+F12** anywhere in a running Shesha application to open a floating, resizable debug panel (it can also be toggled through the **Toggle debug panel** configurable action, for example from a button). Unlike the Form Designer's panel, everything shown here is editable - expanding a value lets you type in a new one directly, which is useful for quickly testing how a form behaves with different data without going through the UI.
 
-- Developers can inspect the values of variables at different points in the code execution. This is particularly useful for understanding how data changes over time and diagnosing unexpected behavior.
+The panel shows three groups of data as expandable trees:
 
-**Performance Monitoring:**
+| Group | What it shows |
+|---|---|
+| `GlobalState (obsolete)` | The application's global state object. Labelled obsolete in the panel itself - avoid relying on global state for new work. |
+| `Form data` | The current form's data, editable field by field. |
+| One entry per active context | Every context currently available on the page (for example `pageContext`, `formContext`, or any component-provided context), each editable. |
 
-- Debug panels may provide insights into the performance of the application, including metrics such as execution time, memory usage, and network requests. Monitoring performance helps identify bottlenecks and optimize code.
+You can drag the panel to the top, bottom, left, or right of the screen using the position dropdown in its header, and resize it by dragging its edge.
 
-**Network Requests:**
+:::warning Editing here changes real state
+Because the runtime panel writes directly back to form data, global state, and contexts, changes you make here take effect immediately, the same as if a script had made them. Use it for testing and diagnosis, not as a way to permanently set values a user should enter through the form itself.
+:::
 
-- Developers can inspect network requests made by the application, view request and response headers, and analyze data payloads. This is valuable for debugging issues related to data fetching and communication with servers.
+---
 
-**Event Tracing:**
+## Usage
 
-- Some debug panels offer event tracing capabilities, allowing developers to trace the sequence of events or function calls. This helps in understanding the execution flow and identifying the source of issues.
+Reach for the Debug Panel whenever you need to see what a script, component, or the form itself would actually see, instead of scattering `console.log` calls through your code or guessing at a context's shape:
 
-**Error Tracking:**
+- Check what fields and values are actually present in `data` at a given point, especially on entities with many properties.
+- Confirm a context (`pageContext`, `formContext`, an entity Data Context, and so on) exists and holds what you expect before writing a script against it.
+- Reproduce an edge case at runtime by editing a value directly in the Ctrl+F12 panel, rather than re-entering it through the UI every time.
+- Verify that a scripted Hide/Visibility expression or event handler is reading the field you think it's reading.
 
-- Debug panels often display detailed information about errors, including stack traces and error messages. Developers can quickly identify where an error occurred and the context in which it happened.
+---
 
-**Interactive Console:**
+## Benefits
 
-- A debug panel may include an interactive console that allows developers to run commands and test code snippets in the context of their application. This is valuable for experimenting with solutions and verifying hypotheses.
-
-## Benefits of a Debug Panel
-
-**Efficient Debugging:**
-
-- Debug panels streamline the debugging process by providing a centralized and organized interface for various debugging tools. This improves the efficiency of developers when identifying and resolving issues.
-
-**Real-time Feedback:**
-
-- Developers receive real-time feedback on the behavior of their code, making it easier to catch issues during development. This immediacy helps in reducing the debugging cycle and accelerates the development process.
-
-**Increased Visibility:**
-
-- Debug panels provide increased visibility into the inner workings of an application, making it easier to understand complex systems and pinpoint the root cause of problems.
-
-**Collaboration:**
-
-- Debug panels can be beneficial for collaboration among developers. Team members can share insights, logs, and debug information, facilitating a more collaborative approach to problem-solving.
-
-**Optimization Opportunities:**
-
-- With performance metrics and profiling information available in the debug panel, developers can identify areas for optimization and enhance the overall performance of the application.
-
-**Enhanced Developer Experience:**
-
-- A well-designed debug panel contributes to a better developer experience. It offers a user-friendly interface, clear visualizations, and helpful tools that make debugging less daunting and more manageable.
-
-**Support for Testing:**
-
-- Debug panels can be instrumental during testing phases. Developers can use the panel to simulate various scenarios, inspect the application's behavior, and ensure that it meets the required specifications.
+- **No temporary logging** - inspect live state directly instead of adding and later removing `console.log` statements.
+- **Faster iteration when testing** - the runtime panel lets you edit form data, global state, and context values directly, so you can try different inputs without re-entering them through the UI each time.
+- **One tool for both design-time and runtime state** - the Form Designer panel and the Ctrl+F12 panel between them cover what a form's data and contexts look like whether you're building the form or running it.

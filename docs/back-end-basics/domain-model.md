@@ -1,29 +1,34 @@
 ---
 sidebar_label: Domain Model
 sidebar_position: 1
+title: Domain Model
 ---
 
 # Domain Model
 
 The heart of a Shesha application is the domain. The domain is the set of entities that represent the core business concepts of your application.
 
+---
+
 ## The Base Domain Model
 
 To accelerate the development of your application, Shesha provides a set of core domain entities that you can use as a starting point for your application. We refer to this as the base domain.
 The base domain includes entities such as Person, Address, Organisation and Site which are recurrent in the vast majority of business applications and means you don't have to recreate them for every application.
 
-| Entity                                  | Description                                                                                                                                                                                                                                                                                    |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Account`                               | Represents a customer account, whether on behalf of a person or organisation.                                                                                                                                                                                                                  |
-| `Address`                               | Represents an address.                                                                                                                                                                                                                                                                         |
-| `Organisation`                          | Represents an organizational unit, organisation/company, team or similar.                                                                                                                                                                                                                      |
-| `Person`                                | Represents a person in the application such as employee, customer, contact, etc... A Person is not necessarily a system user as this will depend on whether there is a corresponding `User` for Person. See also ([User management fundamentals](/docs/manage-apps-and-users/user-management)). |
-| `Note`                                  | Represents a user note or comment. A list of notes may be associated with any parent entity. See also [notes](../front-end-basics/form-components/Entity-References/notes.md).                                                                                                                                          |
-| `ReferenceList` and `ReferenceListItem` | Represents a standard list of values. See also [reference lists](/docs/back-end-basics/reference-lists).                                                                                                                                                                                       |
-| `Site`                                  | Represents a geographic location or physical structure such as location, area, buildings, room etc...                                                                                                                                                                                          |
-| `StoredFile`                            | Represents a file stored in the system. See also [file storage fundamentals](/docs/fundamentals/file-storage).                                                                                                                                                                                 |
+| Entity | Description |
+|---|---|
+| `Account` | Represents a customer account, whether on behalf of a person or organisation. |
+| `Address` | Represents an address. |
+| `Organisation` | Represents an organizational unit, organisation/company, team or similar. |
+| `Person` | Represents a person in the application such as employee, customer, contact, etc. A Person is not necessarily a system user as this will depend on whether there is a corresponding `User` for Person. See also [User management fundamentals](/docs/manage-apps-and-users/user-management). |
+| `Note` | Represents a user note or comment. A list of notes may be associated with any parent entity. See also [notes](../front-end-basics/form-components/Entity-References/notes.md). |
+| `ReferenceList` and `ReferenceListItem` | Represents a standard list of values. See also [reference lists](/docs/back-end-basics/reference-lists). |
+| `Site` | Represents a geographic location or physical structure such as location, area, buildings, room etc. |
+| `StoredFile` | Represents a file stored in the system. See also [file storage fundamentals](/docs/fundamentals/file-storage). |
 
 Though it is not a requirement to use the base domain, it is highly recommended to do so as it will accelerate the development of your application and you will be able to leverage other modules that also reference base entities.
+
+---
 
 ## Extending the Domain Model
 
@@ -85,7 +90,7 @@ Although it is possible to create entities with any type of Id, it is recommende
 To ensure that your new entity can be persisted to the database you will need to create the corresponding database objects. In order to do this you will need to create a database migration class. Shesha uses [Fluent Migrator](https://fluentmigrator.github.io/) for the creation of the database migrations with Shesha specific extensions.
 
 :::info Shesha uses NHibernate as its ORM
-Shesha currently uses NHibernate as its ORM rather than the more common EFCore. NHibernate is a mature ORM that has been around for many years and is used in many enterprise applications, however unlike EFCore, NHibernate does not have the ability to generate database migration classes automatically hence the need to create database migrations manually. Migrating Shesha to use **EFCore as its ORM is a priority feature on the roadmap and is planned Feb 2024**.
+Shesha currently uses NHibernate as its ORM rather than the more common EF Core. NHibernate is a mature ORM that has been around for many years and is used in many enterprise applications, however unlike EF Core, NHibernate does not have the ability to generate database migration classes automatically, hence the need to create database migrations manually.
 :::
 
 To create a database migration class, simply create a new class that inherits from the `Migration` class. The example below illustrates the creation of a database migration class for the `Order` entity as part of `MyApp`.
@@ -167,8 +172,9 @@ namespace Shesha.Enterprise
         }
     }
 }
-
 ```
+
+---
 
 ## Custom Queries
 
@@ -205,7 +211,11 @@ namespace Shesha.Enterprise
 }
 ```
 
-the database schema from the domain model. Instead, the database schema is generated using database migrations which must be manually created.
+:::note NHibernate does not generate your schema
+Unlike EF Core, NHibernate does not automatically generate the database schema from the domain model. Instead, the database schema is generated using the database migrations described above, which must be created manually.
+:::
+
+---
 
 ## Database Object Naming Conventions
 
@@ -213,8 +223,8 @@ Shesha will attempt to map the domain model to the database objects by conventio
 
 Shesha automatically maps entities to database tables and properties by convention. The naming conventions used are as follows:
 
-
 ### Entity to Database Table Mapping
+
 For a new entity, Shesha will automatically creates a database table for the entity where the table name will be derived from the pluralized entity name prefixed it with the module database prefix. For example, if you create an entity called `Order`, Shesha will create a table called `MyApp_Orders` in the database, assuming the Database prefix specified is `MyApp`.
 
 For an entity that inherits from an existing entity, no new table will be created. Instead, the entity will be mapped to the existing table of the base entity. For example, if you create an entity called `Employee` that inherits from `Person`, Shesha will map the `Employee` entity to the `Core_Persons` table in the database.
@@ -228,7 +238,8 @@ If the property is a foreign key, Shesha will create a column with the same name
 If the property is a reference list, Shesha will create a column with the same name as the property but suffixed with `Lkp`. For example, if you create a property called `Status`, Shesha will create a column called `StatusLkp` in the database.
 
 Note that in addition to the naming rules above, if the property is being added to an existing entity, Shesha will prefix the name of the column with the module database prefix. For example, if you create a property called `EmployeeNo` as part of an `Employee` entity which inherits from the existing `Person` entity, Shesha will create a column on the `Core_Persons` table called `MyApp_EmployeeNo` in the database. This helps identify any additions to the base entity and also helps avoid any naming conflicts with other modules that may also be extending the same base entity.
-                                                             |
+
+---
 
 ## Module Database Prefix
 
@@ -249,9 +260,11 @@ The prefix is defaulted to `App_` in the default starter project but can be chan
 ...
 ```
 
-> Another example can be found in the starter project on Shesha's GitHub repository. In this project, the Module Database Prefix is defined in the domain module as shown below:
+:::note
+Another example can be found in the starter project on Shesha's GitHub repository. In this project, the Module Database Prefix is defined in the domain module as shown below:
+:::
 
-```c# title="shesha-starter/backend/src/Module/ShaCompanyName.ShaProjectName.Domain/Properties/AssemblyInfo.cs" {23} 
+```csharp title="shesha-starter/backend/src/Module/ShaCompanyName.ShaProjectName.Domain/Properties/AssemblyInfo.cs" {23}
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Intent.RoslynWeaver.Attributes;
@@ -278,13 +291,97 @@ using Shesha.Attributes;
 [assembly: IntentTemplate("Boxfusion.Modules.Domain.Properties", Version = "1.0")]
 ```
 
+---
+
 ## Domain Repositories
 
-### See Also:
-[//]: # "TODO:Json Entities - Ignore for now as advanced feature"
+Shesha uses ABP's generic repository pattern to query and persist domain entities. For any entity `TEntity` with a primary key type `TPrimaryKey` (`Guid` for most entities in the base domain), ABP automatically provides an `IRepository<TEntity, TPrimaryKey>` you can inject into an application service or other class without having to write or register it yourself.
+
+### Injecting a Repository
+
+Inject `IRepository<TEntity, TPrimaryKey>` through the constructor, specifying your entity and its primary key type:
+
+```csharp
+public class ShaRoleAppService : SheshaCrudServiceBase<ShaRole, ShaRoleDto, Guid, FilteredPagedAndSortedResultRequestDto, CreateShaRoleDto, ShaRoleDto>, IShaRoleAppService
+{
+    private readonly IRepository<ShaRoleAppointedPerson, Guid> _roleAppointmentRepository;
+
+    public ShaRoleAppService(
+        IRepository<ShaRole, Guid> repository,
+        IRepository<ShaRoleAppointedPerson, Guid> roleAppointmentRepository
+        ) : base(repository)
+    {
+        _roleAppointmentRepository = roleAppointmentRepository;
+    }
+}
+```
+
+:::note CRUD base classes already expose a Repository
+If your application service inherits from a Shesha/ABP CRUD base class such as `SheshaCrudServiceBase<TEntity, TDto, TPrimaryKey, ...>` (as `ShaRoleAppService` does above), the repository for its main entity is passed to the base constructor and made available as the protected `Repository` property - you don't need to inject or store it yourself, only additional repositories for other entities.
+:::
+
+### Querying Data
+
+`GetAll()` returns an `IQueryable<TEntity>`, so you can filter it with regular LINQ before executing the query:
+
+```csharp
+var isGranted = await _roleAppointmentRepository.GetAll()
+    .AnyAsync(a => a.Person != null && a.Person.User != null && a.Person.User.Id == userId && a.Role.Name == input.RoleName);
+```
+
+:::tip Conditionally applying a filter
+`Abp.Linq.Extensions` adds a `WhereIf(condition, predicate)` extension method, which applies `predicate` only when `condition` is `true` - useful for building up a query with several optional filters without a chain of `if` statements:
+
+```csharp
+return await _repository.GetAll()
+    .Where(e => e.MobileNumber1 == mobileNo)
+    .WhereIf(id.HasValue, e => e.Id != id)
+    .AnyAsync();
+```
+:::
+
+### Inserting, Updating, and Deleting
+
+Use `GetAsync(id)` to load a single entity by its primary key, and `InsertAsync`/`UpdateAsync`/`DeleteAsync` to persist changes:
+
+```csharp
+public override async Task<ShaRoleDto> CreateAsync(CreateShaRoleDto input)
+{
+    var role = ObjectMapper.Map<ShaRole>(input);
+
+    await Repository.InsertAsync(role);
+    await CurrentUnitOfWork.SaveChangesAsync();
+
+    return MapToEntityDto(role);
+}
+
+public override async Task<ShaRoleDto> UpdateAsync(ShaRoleDto input)
+{
+    var role = await Repository.GetAsync(input.Id);
+
+    role.Label = input.Label;
+    role.Description = input.Description;
+
+    await Repository.UpdateAsync(role);
+    await CurrentUnitOfWork.SaveChangesAsync();
+
+    return MapToEntityDto(role);
+}
+
+public override async Task DeleteAsync(EntityDto<Guid> input)
+{
+    var role = await Repository.GetAsync(input.Id);
+
+    await Repository.DeleteAsync(role);
+}
+```
+
+:::note Why call CurrentUnitOfWork.SaveChangesAsync() explicitly
+ABP already wraps each application service method in a unit of work that commits automatically when the method returns successfully, so `SaveChangesAsync()` isn't strictly required after every change. Call it explicitly, as shown above, when you need the change flushed to the database immediately - for example, so a just-inserted entity's generated `Id` is available before the method continues.
+:::
+
+### See Also
 
 - [Reference Lists](/docs/back-end-basics/reference-lists)
 - [Domain Class Attributes](/docs/back-end-basics/domain-classes-attributes)
 - [Generic Entity References](/docs/back-end-basics/generic-entity-references)
-
-

@@ -1,17 +1,40 @@
+---
+sidebar_label: Toggling Edit Mode
+title: Toggling Edit Mode
+---
+
 # Toggling Edit Mode
 
-The Shesha dashboard, various forms, and pages can be edited by toggling the edit mode. To do this, click the edit button (pencil icon) located in the top right corner.
+Every Shesha application runs in one of two modes. **Live Mode** is how your end users experience the app day to day. **Edit Mode** unlocks the parts of the app an administrator can reconfigure right there on the page, without switching over to the Configuration Studio.
 
-**Important:** The edit mode button is visible only if the current user have been assigned the correct role, with this permission: `app:Configurator`
+---
 
-After clicking the edit mode button, you will be prompted to confirm your intention to access this mode.
+## Turning Edit Mode On
 
-Select `OK` to proceed with the edit mode.
+![Images](./images/togglingeditmode.png)
 
-## Edit Mode Areas
+Look for the **Live Mode** / **Edit Mode** switch in the application header. It's only visible to users who hold the `app:Configurator` permission - if you don't have that permission, you won't see it at all.
 
-Once you have entered edit mode, there are three main edit areas that you can interact with:
+Flipping the switch takes effect straight away, with a brief "You are now in Edit Mode" message confirming the change. Flip it again to return to Live Mode.
 
-1. [Main Menu](/docs/settings/settings-overview#main-menu-settings)
-2. **Logo**
-3. **View**
+---
+
+## What You Can Edit in Edit Mode
+
+### The Menu
+
+Move your mouse to the top-left edge of the menu on the left and a small pencil icon appears. Click it to open the **Sidebar Menu Configuration** dialog, where you can add, remove, reorder, and rename menu items and groups without leaving the page you're on.
+
+This edits the same menu covered in [Main Menu Settings](/docs/settings/settings-overview#main-menu-settings) - the pencil icon here is just a quicker way to reach it.
+
+### The Logo
+
+Hover over the logo in the header and an **Edit logo** button appears over it, letting you replace it without leaving the page.
+
+### The Form or View You're Looking At
+
+Hover over the main content of a page built from a configured form, and a small bar appears showing that form's name along with its own pencil icon. Click the pencil to open that form directly in the designer, so you can go straight from looking at a screen to editing it.
+
+:::tip
+This works form by form. If a page is made up of several forms, for example one with an embedded sub-form, hovering over each part shows that part's own name and its own pencil icon.
+:::

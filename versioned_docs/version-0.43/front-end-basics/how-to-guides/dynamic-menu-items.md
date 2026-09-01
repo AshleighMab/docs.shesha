@@ -1,32 +1,79 @@
+---
+sidebar_label: Dynamic Menu Items
+title: Dynamic Menu Items
+---
+
 # Dynamic Menu Items
 
-Dynamic menu items refer to the ability to generate or modify menu items in a user interface (UI) dynamically based on certain conditions or data. This is often implemented in web applications to create menus that change based on factors such as user roles, permissions, user preferences, or the current state of the application.
+A Button or Button Group component normally gets its items from a fixed list you configure once in the designer - you add each button by hand, and that list only changes when a configurator edits it again. Dynamic items replace that fixed list with one generated from data instead: for the no-code option described below, one button is generated for every record a data source (a URL endpoint, or a Shesha entity with optional filters) returns when the component loads, so the buttons shown reflect whatever records exist in that data source rather than a hand-typed list.
 
-Here's an explanation of dynamic menu items:
+For example, the tutorial below builds a button group from a list of Enquiry Templates fetched from an API. Each template in the response becomes its own button, and each button's click action is configured once, using that template's data (its `id`) to decide what happens - rather than a configurator having to add and wire up one button per template by hand, and again every time a template is added or removed.
 
-1. **Generating Menu Items Programmatically:** Instead of hardcoding menu items directly into the UI code, dynamic menus are generated programmatically based on certain criteria. For example, menu items can be generated based on the user's role or permissions.
+Shesha supports this two ways: a no-code option built into the Button/Button Group item type, and a fully custom code-based option for anything the built-in option can't express.
 
-2. **Role-Based Menus:** Dynamic menu items can be tailored to specific user roles. For instance, an admin user might see additional menu options compared to a regular user.
+---
 
-3. **Permission-Based Menus:** Menu items can be displayed or hidden based on the user's permissions. For example, if a user doesn't have permission to access a certain feature, the corresponding menu item for that feature might not be displayed to them.
+## No-Code Approach
 
-4. **User Preferences:** Users may have the ability to customize their menus based on their preferences. This could involve rearranging menu items, adding shortcuts, or hiding certain options.
+Set an item's **Item Type** to **Dynamic item(s)** on the Button or Button Group configurator.
 
-5. **Data-Driven Menus:** Dynamic menus can also be driven by data retrieved from a database or an external API. For example, a menu might be populated with items retrieved from a list of categories stored in a database.
+![alt text](images/DynamicMenu1.png)
 
-6. **Contextual Menus:** Menu items can change dynamically based on the current context or state of the application. For instance, certain options might be available only when a specific action is performed or when certain conditions are met.
+Then choose a data source:
 
-7. **Real-Time Updates:** In some cases, dynamic menus may update in real-time without requiring a page reload. This could be useful for applications where the menu needs to adapt to changes made by other users or changes in the application state.
+- **URL** - fetch data from a custom API endpoint.
+- **Entity** - fetch data from a specified entity, with optional filters.
 
-Dynamic menu items provide flexibility and customization options in UI design, allowing applications to adapt to various user needs and scenarios. They enhance usability by presenting users with relevant options based on their context and permissions, leading to a more intuitive and efficient user experience.
+![alt text](images/DynamicMenu2.png)
 
-Dependencies: `swr` - Install by running `npm i swr@2.1.5` on the root directory.
+### URL Data Source
 
-In the directory `adminportal\src\components\templates`, create the following files:
+- **Custom Endpoint** - the endpoint to fetch data from.
+- **Query Param** - add key/value query parameters for the request.
+- **Label Property** / **Tooltip Property** - which field on each returned record to use as the button's label and tooltip.
+- **Button Type** - one of `primary`, `ghost`, `dashed`, `link`, `text`, or `default`.
+- **Action configuration** - what happens when a generated button is clicked.
 
-- `model.ts`
+![alt text](images/url.png)
 
-```javascript
+Once configured, one button is generated per record returned by the endpoint:
+
+![alt text](images/view.png)
+
+Displaying the items in a Button Group instead of individual buttons renders them as a dropdown:
+
+![alt text](images/group1.png)
+
+![alt text](images/groupResult.png)
+
+:::tip Accessing the clicked item's data
+Inside a generated button's action configuration, the record it was generated from is available as `dynamicItem`. Log it (for example in a Navigate action's arguments, via a script) to see its shape.
+:::
+
+![alt text](images/dynamicItem.png)
+
+![alt text](images/dynamicItemData.png)
+
+### Entity Data Source
+
+- **Entity Type** - the entity to fetch records from.
+- **Filters** - optional filters to narrow down which records generate buttons.
+
+![alt text](images/filters.png)
+
+- **Label Property** / **Tooltip Property**, **Button Type**, and **Action configuration** work the same way as the URL data source above.
+
+---
+
+## Code-Based Approach
+
+For cases the no-code option can't express, you can register your own dynamic items evaluator using `DynamicActionsProvider` and a `DynamicItemsEvaluationHook`, both exported from `@shesha-io/reactjs`. The example below builds a set of buttons from a list of templates fetched from a custom API, each starting an "Enquiry" workflow from a different template.
+
+This requires the `swr` package: `npm i swr@2.1.5` in the project root.
+
+In `adminportal/src/components/templates`, create `model.ts`:
+
+```typescript
 export interface TemplateDefinition {
   id: string;
   name: string;
@@ -37,9 +84,9 @@ export interface Template {
 }
 ```
 
-- `fetchers.ts`
+And `fetchers.ts`:
 
-```javascript
+```typescript
 export const URLS = {
   GET_ALL_TEMPLATES: `/api/dynamic/Shesha.Tutorial/Template/GetAll`,
 };
@@ -51,9 +98,9 @@ export function GetMember() {
 }
 ```
 
-- `hooks.ts`
+And `hooks.ts`:
 
-```javascript
+```typescript
 import { IAjaxResponse, useSheshaApplication } from "@shesha-io/reactjs";
 import { Template, TemplateDefinition } from "./model";
 import axios from "axios";
@@ -71,7 +118,6 @@ export const useTemplates = () => {
       });
       return res.data.result.items;
     } catch (error) {
-      // do something with the error
       console.error(error);
       throw error;
     }
@@ -84,9 +130,9 @@ export const useTemplates = () => {
 };
 ```
 
-2. In this directory, `\adminportal\utils`, create a `configurableActions.ts` file with the following:
+In `adminportal/utils`, create `configurableActions.ts` with helpers for building action configurations:
 
-```javascript
+```typescript
 import {
   IConfigurableActionConfiguration,
   INavigateActoinArguments,
@@ -99,159 +145,127 @@ export const makeActionConfig = <TArgs = any>(
     IConfigurableActionConfiguration<TArgs>,
     "actionName" | "actionOwner" | "actionArguments" | "onSuccess" | "onFail"
   >
-): IConfigurableActionConfiguration<TArgs> => {
-  return {
-    _type: ACTION_CONFIG_TYPE,
-    actionName: props.actionName,
-    actionOwner: props.actionOwner,
-    actionArguments: props.actionArguments,
-    handleSuccess: Boolean(props.onSuccess),
-    onSuccess: props.onSuccess,
-    handleFail: Boolean(props.onFail),
-    onFail: props.onFail,
-  };
-};
+): IConfigurableActionConfiguration<TArgs> => ({
+  _type: ACTION_CONFIG_TYPE,
+  actionName: props.actionName,
+  actionOwner: props.actionOwner,
+  actionArguments: props.actionArguments,
+  handleSuccess: Boolean(props.onSuccess),
+  onSuccess: props.onSuccess,
+  handleFail: Boolean(props.onFail),
+  onFail: props.onFail,
+});
 
 export const makeNavigateActionConfig = (
   props: Pick<
     IConfigurableActionConfiguration<INavigateActoinArguments>,
     "actionArguments" | "onSuccess" | "onFail"
   >
-): IConfigurableActionConfiguration<INavigateActoinArguments> => {
-  return {
-    _type: ACTION_CONFIG_TYPE,
-    actionName: "Navigate",
-    actionOwner: "shesha.common",
-    actionArguments: props.actionArguments,
-    handleSuccess: Boolean(props.onSuccess),
-    onSuccess: props.onSuccess,
-    handleFail: Boolean(props.onFail),
-    onFail: props.onFail,
-    version: 2,
-  };
-};
+): IConfigurableActionConfiguration<INavigateActoinArguments> => ({
+  _type: ACTION_CONFIG_TYPE,
+  actionName: "Navigate",
+  actionOwner: "shesha.common",
+  actionArguments: props.actionArguments,
+  handleSuccess: Boolean(props.onSuccess),
+  onSuccess: props.onSuccess,
+  handleFail: Boolean(props.onFail),
+  onFail: props.onFail,
+  version: 2,
+});
 ```
 
-3. Create a provider for evaluation of actions list. In this example we build a list of templates which are used to choose the ‘Enquiry Types’:
+In `adminportal/src/components/templates/dynamic-templates`, create `enquiry-initiate.tsx` - the evaluator hook that turns each template into a button, plus the provider that registers it:
 
-In this directory, `adminportal\src\components\templates\dynamic-templates`, create an `enquiry-initiate.tsx` file with the following:
-
-```javascript
+```typescript
 import React, { PropsWithChildren, useMemo } from "react";
 import { FC } from "react";
 import {
-    DynamicActionsProvider,
-    ButtonGroupItemProps,
-    DynamicItemsEvaluationHook,
-    useAppConfigurator,
-    IButtonItem,
+  DynamicActionsProvider,
+  ButtonGroupItemProps,
+  DynamicItemsEvaluationHook,
+  useAppConfigurator,
+  IButtonItem,
 } from "@shesha-io/reactjs";
 import { useTemplates } from "../hooks";
 import {
-    makeActionConfig,
-    makeNavigateActionConfig,
+  makeActionConfig,
+  makeNavigateActionConfig,
 } from "utils/configurableActions";
 import { GetMember } from "../fetchers";
 
-export interface IWorkflowInstanceStartActionsProps { }
+export interface IWorkflowInstanceStartActionsProps {}
 
 const useEnquiryInitiateActions: DynamicItemsEvaluationHook = (args) => {
-    // Calling hook to get all templates
-    const { data, isLoading, error } = useTemplates();
-    const { configurationItemMode } = useAppConfigurator();
+  const { data, isLoading, error } = useTemplates();
+  const { configurationItemMode } = useAppConfigurator();
 
-    const operations = useMemo<ButtonGroupItemProps[]>(() => {
-        if (!data || isLoading || error) return [];
+  const operations = useMemo<ButtonGroupItemProps[]>(() => {
+    if (!data || isLoading || error) return [];
 
-        // Mapping out templates to form list of options
-        // Dependencies: current user
-        const result = data.map<IButtonItem>((p) => ({
-            id: p.id,
-            name: p.name,
-            label: p.name,
-            itemType: "item",
-            itemSubType: "button",
-            sortOrder: 0,
-            actionConfiguration: makeActionConfig({ // Creating Enquiry from selecting a template
-                actionName: "API Call",
-                actionOwner: "shesha.common",
-                actionArguments: {
-                    verb: "post",
-                    url: `/api/dynamic/Shesha.Tutorial/Enquiry/Create`,
-                    parameters: [
-                        {
-                            id: "CBc2Xng3M682kZwGhAwHt",
-                            key: "member",
-                            value: GetMember(),
-                        },
-                        {
-                            id: "AKc2Xng3M682kZwGhAwHt",
-                            key: "template",
-                            value: p.id,
-                        }
-                    ],
-                    sendStandardHeaders: true,
-                },
-                onSuccess: makeNavigateActionConfig({ // Navigating to Enquiry Form
-                    actionArguments: {
-                        navigationType: "url",
-                        url: "/dynamic/ShaCompanyName.ShaProjectName/member-enquiry",
-                        queryParameters: [{ key: "id", value: "{{actionResponse.id}}" }, { key: "mode", value: "edit" }],
-                    },
-                }),
-                onFail: makeActionConfig({ // Error message to show on fail
-                    actionName: "Show Confirmation Dialog",
-                    actionOwner: "shesha.common",
-                    actionArguments: {
-                        title: "Error",
-                        content: "Failed to initiate enquiry!",
-                        okText: "",
-                        cancelText: "",
-                    },
-                }),
-            }),
-        }));
+    return data.map<IButtonItem>((p) => ({
+      id: p.id,
+      name: p.name,
+      label: p.name,
+      itemType: "item",
+      itemSubType: "button",
+      sortOrder: 0,
+      actionConfiguration: makeActionConfig({
+        actionName: "API Call",
+        actionOwner: "shesha.common",
+        actionArguments: {
+          verb: "post",
+          url: `/api/dynamic/Shesha.Tutorial/Enquiry/Create`,
+          parameters: [
+            { id: "CBc2Xng3M682kZwGhAwHt", key: "member", value: GetMember() },
+            { id: "AKc2Xng3M682kZwGhAwHt", key: "template", value: p.id },
+          ],
+          sendStandardHeaders: true,
+        },
+        onSuccess: makeNavigateActionConfig({
+          actionArguments: {
+            navigationType: "url",
+            url: "/dynamic/ShaCompanyName.ShaProjectName/member-enquiry",
+            queryParameters: [
+              { key: "id", value: "{{actionResponse.id}}" },
+              { key: "mode", value: "edit" },
+            ],
+          },
+        }),
+        onFail: makeActionConfig({
+          actionName: "Show Confirmation Dialog",
+          actionOwner: "shesha.common",
+          actionArguments: { title: "Error", content: "Failed to initiate enquiry!", okText: "", cancelText: "" },
+        }),
+      }),
+    }));
+  }, [args.item, data, configurationItemMode]);
 
-        return result;
-    }, [args.item, data, configurationItemMode]);
-
-    return operations;
+  return operations;
 };
 
-export const EnquiryInitiateActions: FC<
-    PropsWithChildren<IWorkflowInstanceStartActionsProps>
-> = ({ children }) => {
-    return (
-        <DynamicActionsProvider
-            id="enquiry-initiate"
-            name="Enquiry Initiate"
-            useEvaluator={useEnquiryInitiateActions}
-        >
-            {children}
-        </DynamicActionsProvider>
-    );
-};
-
+export const EnquiryInitiateActions: FC<PropsWithChildren<IWorkflowInstanceStartActionsProps>> = ({ children }) => (
+  <DynamicActionsProvider id="enquiry-initiate" name="Enquiry Initiate" useEvaluator={useEnquiryInitiateActions}>
+    {children}
+  </DynamicActionsProvider>
+);
 ```
 
-3.1. In the same directory, create an `index.tsx` file to initialize your provider, also making provision for other providers of the same scope to be combined:
+Then, in the same directory, create an `index.tsx` to combine this provider with any others of the same scope:
 
-```javascript
+```typescript
 import React, { FC, PropsWithChildren } from "react";
 import { EnquiryInitiateActions } from "./enquiry-initiate";
 
 export interface IEnquiryActionsProviderProps {}
 
-export const EnquiryActionsProvider: FC<
-  PropsWithChildren<IEnquiryActionsProviderProps>
-> = ({ children }) => {
+export const EnquiryActionsProvider: FC<PropsWithChildren<IEnquiryActionsProviderProps>> = ({ children }) => {
   return <EnquiryInitiateActions>{children}</EnquiryInitiateActions>;
 };
 ```
 
-4. Render your provider under the main application provider, `\adminportal\src\app\app-provider.tsx`, see below:
+Finally, mount your provider inside the app's provider tree, `adminportal/src/app/app-provider.tsx`:
 
-```javascript
+```typescript
 "use client";
 
 import React, { FC, PropsWithChildren } from "react";
@@ -265,49 +279,22 @@ import {
 import { AppProgressBar } from "next-nprogress-bar";
 import { useTheme } from "antd-style";
 import { EnquiryActionsProvider } from "@/components/templates/dynamic-templates";
-/* NEW_TOOLBOXCOMPONENT_IMPORT_GOES_HERE */
 
 export interface IAppProviderProps {
   backendUrl: string;
 }
 
-export const AppProvider: FC<PropsWithChildren<IAppProviderProps>> = ({
-  children,
-  backendUrl,
-}) => {
+export const AppProvider: FC<PropsWithChildren<IAppProviderProps>> = ({ children, backendUrl }) => {
   const nextRouter = useNextRouter();
   const theme = useTheme();
-
-  const noAuthRoutes = [
-    "/no-auth",
-    "/login",
-    "/account/forgot-password",
-    "/account/reset-password",
-  ];
-  const noAuth = Boolean(
-    noAuthRoutes.find((r) => nextRouter.path?.includes(r))
-  );
 
   return (
     <GlobalStateProvider>
       <AppProgressBar height="4px" color={theme.colorPrimary} shallowRouting />
-      <ShaApplicationProvider
-        backendUrl={backendUrl}
-        router={nextRouter}
-        noAuth={false}
-        toolboxComponentGroups={
-          [
-            /* NEW_TOOLBOXCOMPONENT_GOES_HERE */
-          ]
-        }
-      >
+      <ShaApplicationProvider backendUrl={backendUrl} router={nextRouter} noAuth={false}>
         <EnquiryActionsProvider>
           <StoredFilesProvider baseUrl={backendUrl} ownerId={""} ownerType={""}>
-            {noAuth ? (
-              <>{children}</>
-            ) : (
-              <MainLayout noPadding>{children}</MainLayout>
-            )}
+            <MainLayout noPadding>{children}</MainLayout>
           </StoredFilesProvider>
         </EnquiryActionsProvider>
       </ShaApplicationProvider>
@@ -316,74 +303,11 @@ export const AppProvider: FC<PropsWithChildren<IAppProviderProps>> = ({
 };
 ```
 
-5. Use `Item Type` = `Dynamic item(s)` on the button group configurator to add your items. See below image:
-   ![Image](./images/dynamic-menu.png)
-   ![Image](./images/button-group.png)
+With the provider registered, set the item's **Item Type** to **Dynamic item(s)** on the Button Group configurator to use it:
 
-Once a template has been selected, the user will be redirected to the `member-enquiry` form which is initialized with a different form based on which template was selected:
+![Image](./images/dynamic-menu.png)
+![Image](./images/button-group.png)
 
-**1. Renewal**
-
-![Image](./images/template2.png)
-
-**2. Assistance**
-
-![Image](./images/template1.png)
-
-**3. Cancellation**
-
-![Image](./images/template3.png)
-
-**4. Feedback**
-
-![Image](./images/template4.png)
-
-
-## Alternative Approach 
-
-You can also configure your dynamic menu items, this approach requires no code.
-
-**Step 1** - Drag in your button or button group, add an item and select `Dynamic item(s)` as the Item type.
-
-![alt text](images/DynamicMenu1.png)
-
-**Step 2** - From the options, select either:
-
- - `URL`: Fetch data from a custom endpoint.
- - `Entity`: Fetch data from a specified entity with filters.
- 
- ![alt text](images/DynamicMenu2.png)
-
-**Step 3** - Depending on which method you chose, you can fill in the settings. for example:
-
-  If `URL` is chosen:
-  - Specify the custom endpoint to fetch data from.
-  - Define query parameters for the request, e.g., maxResultCount.
-  - Set the button type to define its style.
-
-  ![alt text](images/url.png)
-
-  - You can now view your buttons:
-
-  ![alt text](images/view.png)
-
-  - You can also display them in a group, this allows the buttons to be displayed in a dropdown format.
-
-  ![alt text](images/group1.png)
-
-  ![alt text](images/groupResult.png)
-
-  - Configure actions for the buttons, e.g., navigate to a form dynamically based on the data from the clicked button.
-  - To access metadata from the clicked button, log `dynamicItem`
-
-  ![alt text](images/dynamicItem.png)
-
-  ![alt text](images/dynamicItemData.png)
-
-  If `ENTITY` is chosen:
-  - Specify the entity type.
-  - Specify the `maxResultCount` of your data.
-  - You can also include filters on your data. e.g.
-
-  ![alt text](images/filters.png)
-  - Configure actions for the buttons, e.g., navigate to a form dynamically based on the data from the clicked button.
+:::note
+This example redirects the user to a `member-enquiry` form after a template is selected, which then renders differently depending on which template was chosen - for example a Renewal, Assistance, Cancellation, or Feedback layout. That form-level behavior is specific to this tutorial's own forms, not something the framework provides directly.
+:::

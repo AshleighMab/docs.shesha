@@ -1,74 +1,87 @@
+---
+sidebar_label: Audit Logging
+title: Audit Logging
+---
+
 # Audit Logging
 
-Shesha Entity History framework is based on Abp.EntityHistory (https://aspnetboilerplate.com/Pages/Documents/Entity-History)
+Shesha's audit trail is built on top of [Abp.EntityHistory](https://aspnetboilerplate.com/Pages/Documents/Entity-History), with a number of Shesha-specific additions layered on top: a ready-made DataTable view of an entity's history, extension methods for logging custom events, and attributes that control how property changes and related-entity changes are described.
 
-In addition, were added some Shesha specific features.
+---
 
-## Audit trail DataTable configuration
+## Audit Trail DataTable Configuration
 
-Implemented in `Shesha.Application` module, `Shesha.EntityHistory.EntityHistoryAppService` class
+Implemented in the `Shesha.Application` module's `EntityHistoryAppService` class (`GetAuditTrailAsync`). Use it to show the audit trail for a specific entity in a DataTable control.
 
-Allow to show Audit trail for specific object in the DataTable control.
+### Columns
 
-#### Columns:
+| Column | Description |
+|---|---|
+| **Type of event** | Type of audited event (Created, Updated, Child object updated, child object added, etc.) or changes of properties |
+| **Description** | Main description of the event - the changed properties, the name of an added or removed child entity, or a custom event description. If several properties changed at once, all the changes are shown as a single description |
+| **User** | Full name of the user who made the change or triggered the event |
+| **Date** | Date of the event |
 
-    - **Type of event** – type of audited event (Created, Updated, Child object updated, child object added, etc.…) / changes of properties
-    - **Description** – main description of the event (changes of properties, a name of added or removed child entity, a custom event description). If there were changed few properties of entity the all changes will be displayed as one description
-    - **User** – full name of user who made changes or triggered an event
-    - **Date** – date of event
+---
 
-## EventHistory Configuration for anonymous users (e.g. background Job)
+## Entity History for Anonymous Users (e.g. a Background Job)
 
-Add the following code snippet in the sheshaWebHostModule.cs file in the `Shesha.Web.Host` module in the Startup folder.
+By default, changes made by anonymous users (such as a background job with no logged-in user) are not recorded. Add the following to `PostInitialize` in `SheshaWebHostModule.cs` (in the `Shesha.Web.Host` module's Startup folder) to enable it:
 
 ```cs
 public override void PostInitialize()
 {
-	Configuration.EntityHistory.IsEnabledForAnonymousUsers = true;
+    Configuration.EntityHistory.IsEnabledForAnonymousUsers = true;
 }
 ```
 
-## Audit custom events
+---
 
-Allow to add any custom event to audit trail of entity
+## Adding Custom Audit Events
 
-### Add a simple event with “Description” (`description`)
+These extension methods, defined in `Shesha.NHibernate.EntityHistory.EntityHistoryExtension`, let you add any custom event to an entity's audit trail.
+
+### A Simple Event With a Description
 
 ```cs
-public void AddHistoryEvent(this object entity, string description)
+public static void AddHistoryEvent(this object entity, string description)
 ```
 
-Example:
+**Example:**
 
 ```cs
 user.Password = newPassword;
 user.AddHistoryEvent("Password reset");
 ```
 
-### Add an event with “Type of event” (`eventName`) and “Description” (`description`)
+___
+
+### An Event With a Type and a Description
 
 ```cs
-public void AddHistoryEvent(this object entity, string eventName, string description)
+public static void AddHistoryEvent(this object entity, string eventName, string description)
 ```
 
-Example:
+**Example:**
 
 ```cs
 user.Password = newPassword;
 user.AddHistoryEvent("Password reset", "Password reset by Administrator");
 ```
 
-### Add a property change description.
+___
 
-Allow to use a custom description of specific property change instead of a standard description.
+### A Custom Property Change Description
+
+Use a custom description for a specific property change instead of the standard description.
 
 ```cs
-public void AddPropertyChangeDescription(this object entity, string description, string propertyName)
+public static void AddPropertyChangeDescription(this object entity, string description, string propertyName)
 // or
-public void AddPropertyChangeDescription<TModel, TValue>(this TModel entity, string description, Expression<Func<TModel, TValue>> property)
+public static void AddPropertyChangeDescription<TModel, TValue>(this TModel entity, string description, Expression<Func<TModel, TValue>> property)
 ```
 
-Eaxample:
+**Example:**
 
 ```cs
 user.IsActive = false;
@@ -78,22 +91,21 @@ user.IsActive = false;
 user.AddPropertyChangeDescription("User inactivated", p => p.IsActive);
 ```
 
-This change will be shown in the audit trail as:
-`User inactivated`
-instead of
-`"IsActive" was changed from "true" to "false"`
+This change is shown in the audit trail as `User inactivated`, instead of `"IsActive" was changed from "true" to "false"`.
 
-### Add a property change comment.
+___
 
-Custom comment of change for specific property will be added after standard description.
+### A Property Change Comment
+
+A custom comment for a specific property change, added after the standard description rather than replacing it.
 
 ```cs
-public  void AddPropertyChangeComment(this object entity, string description, string propertyName)
+public static void AddPropertyChangeComment(this object entity, string description, string propertyName)
 // or
-public void AddPropertyChangeComment<TModel, TValue>(this TModel entity, string description, Expression<Func<TModel, TValue>> property)
+public static void AddPropertyChangeComment<TModel, TValue>(this TModel entity, string description, Expression<Func<TModel, TValue>> property)
 ```
 
-Example
+**Example:**
 
 ```cs
 user.IsActive = false;
@@ -102,40 +114,55 @@ user.AddPropertyChangeComment("User inactivated", "IsActive");
 user.AddPropertyChangeComment("User inactivated", p => p.IsActive);
 ```
 
-This change will be shown in the audit trail as:
-`"IsActive" was changed from "true" to "false" (User inactivated)`
+This change is shown in the audit trail as `"IsActive" was changed from "true" to "false" (User inactivated)`.
 
-## Specific property audit Attributes
+---
 
-### Audit Boolean properties Attribute
+## Property-Level Audit Attributes
 
-Show a custom trueText or falseText message instead the standard property change message
+### Audited Boolean Values
+
+Show a custom message instead of the standard property-change description when a boolean property changes.
 
 ```cs
-AuditedBooleanAttribute(string trueText, string falseText)
+[AttributeUsage(AttributeTargets.Property)]
+public class AuditedBooleanAttribute : Attribute
+{
+    public string EventText { get; set; }
+    public string TrueText { get; set; }
+    public string FalseText { get; set; }
+
+    public AuditedBooleanAttribute(string trueText, string falseText)
+}
 ```
 
-Example:
+**Example:**
 
 ```cs
 [AuditedBoolean("SMS Based One-Time-Passwords enabled", "SMS Based One-Time-Passwords disabled")]
 public virtual bool OtpEnabled { get; set; }
 ```
 
-This change will be shown in the audit trail as:
-`SMS Based One-Time-Passwords enabled` instead of `"OtpEnabled" was changed from "false" to "true"`
-or
-`SMS Based One-Time-Passwords disabled` instead of `"OtpEnabled" was changed from "true" to "false"`
+This is shown in the audit trail as `SMS Based One-Time-Passwords enabled` (instead of `"OtpEnabled" was changed from "false" to "true"`), or as `SMS Based One-Time-Passwords disabled` for the reverse change.
 
-### Audit property change as a custom event
+___
 
-Show a custom description and event type created by a class that implements the `IEntityHistoryEventCreator` interface or inherits from the `EntityHistoryEventCreatorBase` class.
+### Audit a Property Change as a Custom Event
+
+Show a custom description and event type, built by a class that inherits from `EntityHistoryEventCreatorBase`.
 
 ```cs
-AuditedAsEventAttribute(Type eventCreator)
+[AttributeUsage(AttributeTargets.Property)]
+public class AuditedAsEventAttribute : Attribute
+{
+    public Type EventCreator { get; set; }
+    public bool SaveFullInfo { get; set; }
+
+    public AuditedAsEventAttribute(Type eventCreator, bool saveFullInfo = true)
+}
 ```
 
-Example
+**Example:**
 
 ```cs
 private class SchoolInformationStatusEventCreator : EntityHistoryEventCreatorBase<RefListSchoolInformationStatus>
@@ -150,22 +177,20 @@ private class SchoolInformationStatusEventCreator : EntityHistoryEventCreatorBas
                     : "Not submitted");
     }
 }
+
 [AuditedAsEvent(typeof(SchoolInformationStatusEventCreator))]
 public virtual RefListSchoolInformationStatus? SchoolInformationStatus { get; set; }
 ```
 
-This change will be shown in the audit trail as:
-**`School information status changed: Not submitted`** instead of **`"SchoolInformationStatus" was changed from "" to "Draft"`**
-or
-**`School information status changed: Submitted for verification`** instead of **`"SchoolInformationStatus" was changed from "Draft" to "Submitted"`**
-or
-**`School information status changed: Submitted as final`** instead of **`"SchoolInformationStatus" was changed from "Submitted" to "Approved"`**
+This is shown in the audit trail as `School information status changed: Not submitted`, `School information status changed: Submitted for verification`, or `School information status changed: Submitted as final`, instead of the raw `"SchoolInformationStatus" was changed from "X" to "Y"`.
 
-## Audit trail of related or child entities
+---
 
-Attributes that allow to include audit events of related or children entities to the Audit trail of entity
+## Including Related and Child Entity Audit Trails
 
-### Display events from related entity
+These class-level attributes pull audit events from related or child entities into the audit trail of the entity being viewed.
+
+### Events From a Related Entity
 
 ```cs
 [AttributeUsage(AttributeTargets.Property)]
@@ -175,9 +200,9 @@ public class DisplayChildAuditTrailAttribute : Attribute
 }
 ```
 
-**AuditedFields** - an array of the child entity field names to be displayed. If this array is provided then the action types that should be shown in the audit have to be added - `Created`, `Updated` or `Deleted`.
+`AuditedFields` is the array of child-entity field names to display. If provided, you also need to specify which action types (`Created`, `Updated`, `Deleted`) should be shown.
 
-Example:
+**Example:**
 
 ```cs
 [DisplayChildAuditTrail]
@@ -185,330 +210,260 @@ Example:
 public virtual Parent SubmittedBy { get; set; }
 ```
 
-Show chnages of entity (`Parent`) related through `SubmittedBy` field
+Shows changes to the related `Parent` entity, reached through the `SubmittedBy` field.
 
-### Display events from generic child entities (e.g. Notes, Attachments, Notifications)
+___
 
-Usually all generic entities implement the `IEntityWithMultipleOwnerTypes` interface
+### Events From Generic Child Entities (e.g. Notes, Attachments, Notifications)
+
+Generic entities typically implement `IEntityWithMultipleOwnerTypes`.
+
+:::note Watch the spelling
+This attribute is spelled `DisplayGenericEntitesAuditTrailAttribute` - missing the "i" in "Entites" - not the more natural-looking `DisplayGenericEntitiesAuditTrailAttribute`. Your code needs to match this exact spelling, as shown below, or it won't compile.
+:::
 
 ```cs
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
-public class DisplayGenericEntitiesAuditTrailAttribute : Attribute
+public class DisplayGenericEntitesAuditTrailAttribute : Attribute
 {
-	public Type EntityType { get; set; }
-
-	public string OwnerIdField { get; set; }
-
+    public Type EntityType { get; set; }
+    public string OwnerIdField { get; set; }
     public string OwnerTypeField { get; set; }
+    public string DisplayName { get; set; }
+    public string NameField { get; set; }
+    public string CategoryField { get; set; }
+    public object CategoryValue { get; set; }
 
-	public string DisplayName { get; set; }
-
-	public string NameField { get; set; }
-
-	public DisplayGenericEntitiesAuditTrailAttribute(Type entityType)
-    {
-    	EntityType = entityType;
-    }
+    public DisplayGenericEntitesAuditTrailAttribute(Type entityType)
 }
 ```
 
-**`EntityType`** - type of related generic entity (eg. `StoredFile`, `Note`, `Comment`)
-**`OwnerIdField`** - name of field of generic entity that store Id of owner entity. `OwnerId` by default
-**`OwnerTypeField`** - name of field of generic entity that store Type of owner entity. `OwnerType` by default
-**`DisplayName`** - name of the type of generic entity that will be displayed in the audit trail. If empty then gets `EntityAttribute()?.FriendlyName` of the **`EntityType`** or uses friendly name of the class of generic entity (**`EntityType`**`.Name.ToFriendlyName()`))
-**`NameField`** - name of field of generic entity that will use to get name of specific related generic entity. If empty then tries to find field with `EntityDisplayNameAttribute` or uses `genericEntity.ToString()`
+- **EntityType** - type of the related generic entity (e.g. `StoredFile`, `Note`, `Comment`)
+- **OwnerIdField** - field on the generic entity holding the owner's ID. Defaults to `OwnerId`
+- **OwnerTypeField** - field on the generic entity holding the owner's type. Defaults to `OwnerType`
+- **DisplayName** - the type name shown in the audit trail. If empty, uses `EntityAttribute()?.FriendlyName` of `EntityType`, or a friendly name derived from the class name
+- **NameField** - field on the generic entity used as its display name. If empty, looks for a field with `EntityDisplayNameAttribute`, or falls back to `.ToString()`
+- **CategoryField** / **CategoryValue** - optionally restrict this to generic entities where `CategoryField` equals `CategoryValue` (for example, showing only `Note` entities of a specific category)
 
-Example:
+**Example:**
 
 ```cs
-[DisplayGenericEntitiesAuditTrail(typeof(Comment), NameField = "Text")]
+[DisplayGenericEntitesAuditTrail(typeof(Comment), NameField = "Text")]
 public class SchoolApplication : FullAuditedEntity<Guid>
 ```
 
-Show events from related `Comment` entities and use `Text` field of `Comment` (content of comment) as name (description of event)
+Shows events from related `Comment` entities, using the comment's `Text` field as the event's description.
 
-### Display events from child entities related as many to many through third entity
+___
 
-Relation entity should implement `IFullAudited` interface
-Example of relation structure
+### Events From Many-to-Many Related Entities
 
-```cs
-public class A
-{
-	...
-}
-
-public class B
-{
-	...
-}
-
-public class RelationAB
-{
-	public A ObjectA { get; set; }
-	public B ObjectB { get; set; }
-
-	...
-
-}
-```
+The join entity must implement `IFullAudited`.
 
 ```cs
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class DisplayManyToManyAuditTrailAttribute : Attribute
 {
-	public Type ManyToManyEntityType { get; set; }
-
-	public string DisplayName { get; set; }
-
-	public string OwnEntityField { get; set; }
-
-	public string RelatedEntityField { get; set; }
-
+    public Type ManyToManyEntityType { get; set; }
+    public string DisplayName { get; set; }
+    public string OwnEntityField { get; set; }
+    public string RelatedEntityField { get; set; }
     public Type RelatedEntityType { get; set; }
-
     public bool AnyRelatedEntityType { get; set; }
-
     public string NameField { get; set; }
-
     public string[] AuditedFields { get; set; }
 
-	public DisplayManyToManyAuditTrailAttribute(Type manyToManyEntityType, string relatedEntityField)
-    {
-    	ManyToManyEntityType = manyToManyEntityType;
-        DisplayName = manyToManyEntityType.Name.ToFriendlyName();
-        RelatedEntityField = relatedEntityField;
-    }
+    public DisplayManyToManyAuditTrailAttribute(Type manyToManyEntityType, string relatedEntityField)
 }
 ```
 
-**`ManyToManyEntityType`** - type of relation entity
-**`DisplayName`** - name of the type of related entity that will be displayed in the audit trail. If empty then gets `EntityAttribute()?.FriendlyName` of the related entity or uses friendly name of the class of generic entity (`Related_Entity_Type.Name.ToFriendlyName()`))
-**`OwnEntityField`** - name of field of relation entity that store reference to this entity. If empty then tries to find field with the same type as this entity
-**`RelatedEntityField`** - name of field of relation entity that store reference to related entity
-**`RelatedEntityType`** - type of relation entities (optional). It can be helpful if a type of relation entities is inherited
-**`AnyRelatedEntityType`** - if true then will be found entities with any types by reference from **`RelatedEntityField`**. It can be helpful if related entities have different but inherited types (`Employee` -> `Person`).
-**`NameField`** - name of field of related entity that will use to get name of specific related entity. If empty then tries to find field with `EntityDisplayNameAttribute` or uses `relatedEntity.ToString()`
-**'AuditedFields'** - an array of the child entity field names to be displayed. If this array is provided then the action types that should be shown in the audit have to be added - `Created`, `Updated` or `Deleted`.
+- **ManyToManyEntityType** - the join entity's type
+- **DisplayName** - defaults to the join entity type's friendly name
+- **OwnEntityField** - field on the join entity referencing this entity. If empty, Shesha looks for a field of this entity's own type
+- **RelatedEntityField** - field on the join entity referencing the related entity
+- **RelatedEntityType** - the related entity's type (optional, useful when the join entity's related type is itself a base type)
+- **AnyRelatedEntityType** - when true, matches related entities of any type reachable through `RelatedEntityField` (useful for an inherited hierarchy, e.g. `Employee` extends `Person`)
+- **NameField** - field on the related entity used as its display name
+- **AuditedFields** - as above, the array of child-entity fields to display alongside the required action types
 
-Example:
-Relation entity
+**Example:**
 
 ```cs
 public class ShaRoleAppointedPerson : FullAuditedEntity<Guid>
 {
-	public virtual Person Person { get; set; }
-	public virtual ShaRole Role { get; set; }
+    public virtual Person Person { get; set; }
+    public virtual ShaRole Role { get; set; }
 }
-```
 
-```cs
 [DisplayManyToManyAuditTrail(typeof(ShaRoleAppointedPerson), "Person", DisplayName = "Member")]
-public class ShaRole: FullAuditedEntity<Guid>, IMayHaveTenant
+public class ShaRole : FullAuditedEntity<Guid>, IMayHaveTenant
 ```
 
-Show events from related `Person` entities as `Member` changes. `ShaRoleAppointedPerson` entities are used as many-to-many relation
-`"Member" added : Full Name of person`
+Shows events from related `Person` entities as `Member` changes, using `ShaRoleAppointedPerson` as the join entity - for example, `"Member" added: <Full Name of person>`.
 
-Also there is can be inverse relation:
+The reverse relationship can be declared on the other side too:
 
 ```cs
 [DisplayManyToManyAuditTrail(typeof(ShaRoleAppointedPerson), "Role", DisplayName = "Role Appointment")]
 public class Person : FullAuditedEntity<Guid>, IMayHaveTenant
 ```
 
-Show events from related `Role` entities as `Role Appointment` changes. `ShaRoleAppointedPerson` entities are used as many-to-many relation
-`"Role Appointment" added : Name of role`
+___
 
-### Display events from child entities related as many to one
+### Events From Many-to-One Related Entities
 
 ```cs
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
- public class DisplayManyToOneAuditTrailAttribute : Attribute
- {
-     public Type ManyToOneEntityType { get; set; }
+public class DisplayManyToOneAuditTrailAttribute : Attribute
+{
+    public Type ManyToOneEntityType { get; set; }
+    public string DisplayName { get; set; }
+    public string RelatedEntityField { get; set; }
+    public string NameField { get; set; }
+    public string[] AuditedFields { get; set; }
 
-     public string DisplayName { get; set; }
-
-     public string RelatedEntityField { get; set; }
-
-     public string NameField { get; set; }
-
-     public string[] AuditedFields { get; set; }
-
-     public DisplayManyToOneAuditTrailAttribute(Type manyToOneEntityType)
-     {
-         ManyToOneEntityType = manyToOneEntityType;
-         DisplayName = manyToOneEntityType.Name.ToFriendlyName();
-     }
- }
+    public DisplayManyToOneAuditTrailAttribute(Type manyToOneEntityType)
+}
 ```
 
-**`ManyToOneEntityType`** - type of related entities
-**`DisplayName`** - name of the type of related entity that will be displayed in the audit trail. If empty then gets `EntityAttribute()?.FriendlyName` of the related entity or uses friendly name of the class of generic entity (**`RelatedEntityType`**`.Name.ToFriendlyName()`))
-**`RelatedEntityField`** - name of field of related entity that store reference to this entity
-**`NameField`** - name of field of related entity that will use to get name of specific related entity. If empty then tries to find field with `EntityDisplayNameAttribute` or uses `relatedEntity.ToString()`
-**'AuditedFields'** - an array of the child entity field names to be displayed. If this array is provided then the action types that should be shown in the audit have to be added - `Created`, `Updated` or `Deleted`.
-
-Example:
+**Example:**
 
 ```cs
 [DisplayManyToOneAuditTrail(typeof(DepartmentUser), DisplayName = "School user")]
-public class School : Facility
-{
-	...
-}
+public class School : Facility { }
 
 public class DepartmentUser : GDEPerson
 {
-	[Audited]
+    [Audited]
     public virtual School School { get; set; }
-
-    ...
 }
 ```
 
-Show events from related `DepartmentUser` entities as `School user` changes.
-`"School use" added : Full Name of Department user`
+Shows events from related `DepartmentUser` entities as `School user` changes, e.g. `"School user" added: <Full Name of department user>`.
 
-### End of the audit trail
+___
 
-Specify the property and value after which the audit will be considered complete
+### Ending the Audit Trail at a Specific Value
+
+Stop showing further audit records once a property reaches a given value.
 
 ```cs
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class PropertyChangeToStopAuditTrailAttribute : Attribute
 {
     public string PropertyName { get; set; }
-
     public string PropertyValue { get; set; }
 
     public PropertyChangeToStopAuditTrailAttribute(string propertyName, string propertyValue)
-    {
-        PropertyName = propertyName;
-        PropertyValue = propertyValue;
-    }
 }
 ```
 
-**`PropertyName`** - name of the audited property
-**`PropertyValue`** - value of the audited property. When the property changed to this value then the audit will be considered complete (records after this changes will be ignored)
+**Example:**
 
-Example:
-
-```c#
+```cs
 [PropertyChangeToStopAuditTrail("SchoolVerificationOutcome", "Deleted By Parent")]
 public class SchoolApplication : FullAuditedEntity<Guid>
 ```
 
-When the `SchoolVerificationOutcome` property of the `SchoolApplication` entity will be changed to `Deleted By Parent` then the next records of audit for this entity will not be displayed
+Once `SchoolVerificationOutcome` changes to `Deleted By Parent`, any audit records added after that point are not displayed for this entity.
 
-# SQL Stored Procedures for adding Entity history
+---
 
-if you make some direct DB changes you can use Stored Procedures for adding Entity history events
+## Adding History Events Directly Via SQL
 
-### Add list of changes
+If you make direct database changes outside the application, you can add matching entity history events with stored procedures instead.
+
+### Adding a List of Changes
 
 ```sql
 exec [dbo].[Core_AddEntityHistoryEvents] @changeTime, @reason, @tenantId, @userId, @changes
 ```
 
-**@changeTime** - Date and time of changes. `Null` will be replaced with current time
-**@reason** - Reason of changes
-**@tenantId** - Tenant Id
-**@userId** - User Id
-**@changes** - list (table) of changes. It is a variable of **Core_EntityHistoryItem** type
+| Parameter | Description |
+|---|---|
+| `@changeTime` | Date and time of the changes. `Null` is replaced with the current time |
+| `@reason` | Reason for the changes |
+| `@tenantId` | Tenant ID |
+| `@userId` | User ID |
+| `@changes` | A table-valued parameter of type `Core_EntityHistoryItem` listing the changes |
 
 ```sql
 CREATE TYPE Core_EntityHistoryItem AS TABLE
 (
-	/* Entity changes data */
-	ChangeType tinyint, /* 0 - Created, 1 - Updated, 2 - Deleted*/
-	EntityId nvarchar(48),
-    EntityTypeFullName nvarchar(192), /* Fully qualified name of the entity type, including its namespace but not its assembly */
+    ChangeType tinyint,              -- 0 = Created, 1 = Updated, 2 = Deleted
+    EntityId nvarchar(48),
+    EntityTypeFullName nvarchar(192), -- fully qualified name, namespace included, assembly excluded
 
-	/* Property changes data */
-	PropertyName nvarchar(96),
-	PropertyTypeFullName nvarchar(256), /* Fully qualified name of the property type, including its namespace but not its assembly */
-	NewValue nvarchar(512),
-	OldValue nvarchar(512),
+    PropertyName nvarchar(96),
+    PropertyTypeFullName nvarchar(256),
+    NewValue nvarchar(512),
+    OldValue nvarchar(512),
 
-	Description nvarchar(512) /* Optional */
+    Description nvarchar(512)        -- optional
 )
 ```
 
-**ChangeType** - type of changes - 0 - Created, 1 - Updated, 2 - Deleted
-**EntityId** - Id of changed entity
-**EntityTypeFullName** - fully qualified name of the entity type, including its namespace but not its assembly (C# - `entity.GetType().FullName.FullName` or `typeof(EntityType).FullName`)
-**PropertyName** - name of changed property
-**PropertyTypeFullName** - Fully qualified name of the property type, including its namespace but not its assembly
-**NewValue** - new value
-**OldValue** - old value
-**Description** - optional description
-
-Example:
-
-Unlock all locked users - set IsLocked to false for all users with IsLocked with true.
-
-With property changes data. It will be displayed as a property change in the Audit trail (Like `User updated` event type with description `'IsLocked' was changed from 'true' to 'false'` or `User updated` event type with description `User unlocked`)
+**Example - unlock all locked users, with a property change recorded:**
 
 ```sql
-	Declare @changes Core_EntityHistoryItem
+Declare @changes Core_EntityHistoryItem
 
-	insert into @changes
-	select 1/* update*/, Id, 'Shesha.Authorization.Users.User', 'IsLocked', 'System.Boolean', 'false', 'true', 'User unlocked' /* optional description */
-	from Core_Persons
-	where IsLocked = 1
+insert into @changes
+select 1 /* Updated */, Id, 'Shesha.Authorization.Users.User', 'IsLocked', 'System.Boolean', 'false', 'true', 'User unlocked'
+from Core_Persons
+where IsLocked = 1
 
-	exec [dbo].[Core_AddEntityHistoryEvents] null /* will be used current time */, 'Support ticket #12345: Unlock all users', null, 1 /* Admin user ID*/, @changes
+exec [dbo].[Core_AddEntityHistoryEvents] null /* current time */, 'Support ticket #12345: Unlock all users', null, 1 /* Admin user ID */, @changes
 ```
 
-Without property changes date. It will be displayed as a Entity change event (Like `User unlocked` event type)
+This shows as a `User updated` event with the description `'IsLocked' was changed from 'true' to 'false'` (or, since a description was supplied, `User unlocked`).
+
+**Example - the same change without property data, recorded as a plain event:**
 
 ```sql
-	Declare @changes Core_EntityHistoryItem
+Declare @changes Core_EntityHistoryItem
 
-	insert into @changes
-	select 1/* update*/, Id, 'Shesha.Authorization.Users.User', null, null, null, null, 'User unlocked'
-	from Core_Persons
-	where IsLocked = 1
+insert into @changes
+select 1 /* Updated */, Id, 'Shesha.Authorization.Users.User', null, null, null, null, 'User unlocked'
+from Core_Persons
+where IsLocked = 1
 
-	exec [dbo].[Core_AddEntityHistoryEvents] null /* will be used current time */, 'Support ticket #12345: Unlock all users', null, 1 /* Admin user ID*/, @changes
+exec [dbo].[Core_AddEntityHistoryEvents] null, 'Support ticket #12345: Unlock all users', null, 1, @changes
 ```
 
-### Add single change
+This shows as a `User unlocked` event with no property-change detail.
+
+___
+
+### Adding a Single Change
 
 ```sql
-exec [dbo].[Core_AddEntityHistoryEvents] @changeTime, @reason, @tenantId, @userId, @changeType, @entityId, @entityTypeFullName, @propertyName, @propertyTypeFullName, @newValue, @oldValue, @description
+exec [dbo].[Core_AddSingleEntityHistoryEvent] @changeTime, @reason, @tenantId, @userId, @changeType, @entityId, @entityTypeFullName, @propertyName, @propertyTypeFullName, @newValue, @oldValue, @description
 ```
 
-| Field        | Description                |
-|--------------|----------------------------|
-| **@changeTime**     | Date and time of changes   |
-| **@reason**      | Reason of changes   |
-| **@tenantId**    | Tenant Id    |
-| **@userId**     | User Id   |
-| **@changeType**    | type of changes - 0 - Created, 1 - Updated, 2 - Deleted   |
-| **@entityId**     | Id of changed entity   |
-| **@entityTypeFullName**      | fully qualified name of the entity type, including its namespace but not its assembly (C# - `entity.GetType().FullName.FullName` or `typeof(EntityType).FullName`)  |
-| **@propertyName**     | name of changed property   |
-| **@propertyTypeFullName**   | Fully qualified name of the property type, including its namespace but not its    |
-| **@newValue**    | new value  |
-| **@oldValue**    | old value   |
-| **@description**     | optional description  |
+| Parameter | Description |
+|---|---|
+| `@changeTime` | Date and time of the change |
+| `@reason` | Reason for the change |
+| `@tenantId` | Tenant ID |
+| `@userId` | User ID |
+| `@changeType` | 0 = Created, 1 = Updated, 2 = Deleted |
+| `@entityId` | ID of the changed entity |
+| `@entityTypeFullName` | Fully qualified entity type name (namespace included, assembly excluded) |
+| `@propertyName` | Name of the changed property |
+| `@propertyTypeFullName` | Fully qualified property type name |
+| `@newValue` | New value |
+| `@oldValue` | Old value |
+| `@description` | Optional description |
 
-
-Example:
-Unlock specific user - set IsLocked to false for user
-
-With property changes data. It will be displayed as a property change in the Audit trail (Like `User updated` event type with description `'IsLocked' was changed from 'true' to 'false'` or `User updated` event type with description `User unlocked`)
+**Example - unlock a specific user, with property change data:**
 
 ```sql
-	exec [dbo].[Core_AddSingleEntityHistoryEvent] null /* will be used current time */, 'Support ticket #12345: Unlock all users', null, 1 /* Admin user ID*/, 1/* update*/, 123456 /* User Id */, 'Shesha.Authorization.Users.User', 'IsLocked', 'System.Boolean', 'false', 'true', 'User unlocked' /* optional description */
+exec [dbo].[Core_AddSingleEntityHistoryEvent] null, 'Support ticket #12345: Unlock all users', null, 1, 1, 123456, 'Shesha.Authorization.Users.User', 'IsLocked', 'System.Boolean', 'false', 'true', 'User unlocked'
 ```
 
-Without property changes date. It will be displayed as a Entity change event (Like `User unlocked` event type)
+**Example - the same change without property data:**
 
 ```sql
-	exec [dbo].[Core_AddSingleEntityHistoryEvent] null /* will be used current time */, 'Support ticket #12345: Unlock all users', null, 1 /* Admin user ID*/, 1/* update*/, 123456 /* User Id */, 'Shesha.Authorization.Users.User', null, null, null, null, 'User unlocked'
+exec [dbo].[Core_AddSingleEntityHistoryEvent] null, 'Support ticket #12345: Unlock all users', null, 1, 1, 123456, 'Shesha.Authorization.Users.User', null, null, null, null, 'User unlocked'
 ```

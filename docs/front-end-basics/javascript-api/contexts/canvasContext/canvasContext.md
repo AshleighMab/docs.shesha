@@ -44,7 +44,7 @@ Call these through the `api` property, for example `contexts.canvasContext.api.s
 
 **Example - Hide a component on mobile:**
 
-Use this in a component's [Hide](/docs/front-end-basics/form-components/common-component-properties#hide) setting to hide it whenever the form is being rendered for a mobile device.
+Use this in a component's [Hide](/docs/front-end-basics/form-components/common-component-properties#hide-function) setting to hide it whenever the form is being rendered for a mobile device.
 
 ```javascript
 // Hide returns true to hide the component, false to show it
