@@ -1,65 +1,133 @@
+---
+sidebar_label: Container
+title: Container
+---
+
 # Container
 
-The Container component is used to group components together. It is a wrapper component that can contain other components and apply styling to the group as a whole.
+The Container component groups other components together into a single box. It doesn't bind to any data itself - use it purely as a layout wrapper, to arrange child components with flexbox or grid, and to apply a shared border, background, or size to the group as a whole.
+
+---
 
 ## Properties
 
-The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)).
+The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)). 
 
-[//]: # '<iframe width="100%" height="500" src="https://pd-docs-adminportal-test.shesha.dev/shesha/forms-designer/?id=21208187-d0bf-40e8-a749-fa9def96f5ec" title="Container Component" ></iframe>'
+### Display
 
-### Common
+#### **Hidden** `boolean`
+
+A plain on/off checkbox controlling whether the component is visible on the form. It is not scriptable.
 
 #### **No Default Styling** `boolean`
 
-- If checked, the component will not have any predefined styling, and its visual presentation will have to be fully defined by the configurator.
+If checked, the container's default styles and CSS classes are not applied, leaving its appearance fully up to your own Style/Custom CSS Class settings.
+
+#### **Display** `object`
+
+Sets the CSS `display` value used for laying out the container's children:
+
+| Value | Behaviour |
+|---|---|
+| `flex` | Lays out children as a flexbox, enabling the Flex Direction, Flex Wrap, and Gap settings below. |
+| `grid` | Lays out children as a CSS grid, enabling Grid Columns Count. |
+| `inline-grid` | Same as grid, but the container itself behaves as an inline element. |
+| `block` | Standard block layout - children stack top to bottom. |
+
+#### **Flex Direction** `object`
+
+Only shown when Display is `flex`. Sets the main axis of the flex layout: `row`, `row-reverse`, `column`, `column-reverse`, or one of the CSS-wide keywords (`inherit`/`initial`/`revert`/`revert-layer`/`unset`).
+
+#### **Flex Wrap** `object`
+
+Only shown when Display is `flex`. Controls whether flex children wrap onto multiple lines: `nowrap`, `wrap`, `wrap-reverse`, or a CSS-wide keyword.
+
+#### **Gap** `string`
+
+The spacing between children, for `flex` and `grid` layouts (hidden when Display is `block`). Accepts a plain number, or a CSS size such as `10px` or `20px 20px`.
+
+#### **Grid Columns Count** `number`
+
+Only shown when Display is `grid` or `inline-grid`. The number of columns the grid should have.
+
+#### **Align Items** / **Align Self** / **Justify Content** / **Justify Self** / **Text Justify** `object`
+
+Standard CSS alignment properties for flex/grid layouts, each offering the full set of CSS values for that property (for example, Justify Content offers `flex-start`, `flex-end`, `center`, `space-between`, `space-around`, `space-evenly`, and more).
+
+#### **Justify Items** `object`
+
+Sets the default `justify-self` for all of the container's children at once.
+
+#### **Overflow** `object`
+
+Controls how content that overflows the container's bounds is handled: `auto`, `hidden`, or `scroll`.
+
+#### **Shadow Style** `object`
+
+Adds a drop shadow to the container: `none`, `above` (shadow appears above the container), or `below` (shadow appears below).
 
 ___
 
-### Appearance
+### Border
 
-#### **Layout** `object`
-- Specifies the display behavior (the type of rendering a container or box) of an element. It consists of 4 options:
+#### **Border Width** `string`
 
-  - **Flex:** Displays an element as a block-level flex container.
-  - **Grid:** Displays an element as a block-level grid container.
-  - **Block:** Displays an element as a block element (like `<p>`). It starts on a new line and takes up the whole width.
-  - **Inline-Grid:** Displays an element as an inline-level grid container.
+The container's border width, in px.
 
-#### **Flex-Direction** `object`
+#### **Border Type** `object`
 
-- Sets how flex items are placed in the flex container defining the main axis and the direction (normal or reversed). It consists of 6 options:
+The border line style: `solid`, `dashed`, or `dotted`.
 
-  - **Row:** The flexible items are displayed horizontally, as a row.
-  - **Row-Reverse:** Same as row, but in reverse order.
-  - **Column:** The flexible items are displayed vertically, as a column.
-  - **Column-Reverse:** Same as column, but in reverse order.
-  - **Initial:** Sets this property to its default value.
-  - **Inherit:** Inherits this property from its parent element.
+#### **Border Color** `string`
 
-#### **Flex-Wrap** `object`
+The border colour, picked from a colour picker.
 
-- Is used to control the wrapping behavior of flex items within the flex container.
+#### **Border Radius** `string`
 
-#### **Align-Items** `object`
+The container's corner radius, in px or %.
 
-- Specifies the default alignment for items inside a flexbox or grid container. It consists of 5 options:
+___
 
-  - **Normal:** Default. Behaves like 'stretch' for flexbox and grid items, or 'start' for grid items with a defined block size.
-  - **Stretch:** Items are stretched to fit the container.
-  - **Center:** Items are positioned at the center of the container.
-  - **Start:** Items are positioned at the beginning of their individual grid cells, in the block direction.
-  - **End:** Items are positioned at the end of their individual grid cells, in the block direction.
+### Background
 
-#### **Justify Content** `object`
+#### **Background Type** `object`
 
-- Property aligns the flexible container's items when the items do not use all available space on the main-axis (horizontally). It consists of several options:
+Chooses whether the container has a solid `color` background or an `image` background.
 
-  - **Flex-Start:** Default value. Items are positioned at the beginning of the container.
-  - **Flex-End:** Items are positioned at the end of the container.
-  - **Centre:** Items are positioned in the centre of the container.
-  - **Space-Between:** Items will have space between them.
-  - **Space-Around:** Items will have space before, between, and after them.
-  - **Space-Evenly:** Items will have equal space around them.
-  - **Initial:** Sets this property to its default value.
-  - **Inherit:** Inherits this property from its parent element.
+#### **Color** `string`
+
+Only shown when Background Type is `color`. The background colour, picked from a colour picker.
+
+#### **Image Source Type** `object`
+
+Only shown when Background Type is `image`. Where the background image comes from: `storedFileId` (a file already stored in Shesha), `url`, or `base64`.
+
+#### **Background Size** `object`
+
+Only shown when Background Type is `image`. Whether the image is sized with `contain` or `cover`.
+
+#### **Background Repeat** `object`
+
+Only shown when Background Type is `image`. Whether and how the image tiles: `repeat`, `no-repeat`, `repeat-x`, `repeat-y`, or `round`.
+
+#### **Background Image URL** / **Upload Image** / **StoredFile ID**
+
+Only one of these three shows at a time, matching whichever Image Source Type is selected above - a URL text field, an image upload control, or a Stored File ID text field respectively.
+
+___
+
+### Style
+
+This panel is per-device (its fields can differ between desktop, tablet, and mobile).
+
+#### **Width** / **Min Width** / **Max Width** / **Height** / **Min Height** / **Max Height** `string`
+
+The container's size, accepting `%`, `px`, or `vw` values.
+
+#### **Custom CSS Class** `string`
+
+A custom CSS class name to add to the container.
+
+#### **Wrapper Style** `function`
+
+A script that returns the style to apply to the container's outer wrapper element, as an object. Only has access to `data`. Hidden when **No Default Styling** is checked.

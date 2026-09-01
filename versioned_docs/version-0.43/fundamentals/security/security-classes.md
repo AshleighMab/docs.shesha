@@ -1,66 +1,68 @@
 ---
 sidebar_label: Security Classes and Interfaces
-position: 5
+sidebar_position: 5
 title: Security Classes and Interfaces
 ---
 
 # Security Classes and Interfaces
-Shesha's security framework includes several key classes and interfaces that work together to provide a robust security model. These components are designed to manage user roles, permissions, and access control effectively.
 
-## `RoleManager`
-The `RoleManager` is a key component in Shesha's security framework, responsible for managing roles and permissions. It provides methods to create, update, delete, and assign roles to users, as well as to check if a user has a specific role or permission.
-The `RoleManager` is typically used in conjunction with the `ICurrentUser` interface to enforce security policies and ensure that users can only perform actions they are authorized for.
+Shesha's security model is built from a small set of classes and interfaces that work together: one manages roles, one checks whether the current user holds a permission, and one ties a permission check to a specific protected endpoint, form, or other object. Understanding how these fit together helps when you need to check permissions from custom code, rather than relying on the built-in `[SheshaAuthorize]` attribute or the Permissions setting in the form designer.
 
-### Assigning Roles Programmatically
-To assign roles programmatically, you can use the following example code. This code demonstrates how to assign a scoped role to a user and link it with specific permissions.
+---
+
+## RoleManager
+
+`RoleManager` extends ABP's own `AbpRoleManager<Role, User>` and is responsible for role bookkeeping - creating, renaming, and looking up roles. Two methods are overridden with Shesha-specific behaviour:
+
+- `CheckDuplicateRoleNameAsync(expectedRoleId, name, displayName)` - throws a friendly error if another role already uses the given name or display name.
+- `GetRoleByName(roleName)` - looks up a role by name, throwing if none exists.
+
+Everything else (assigning roles to users, granting permissions to a role, and so on) comes from the inherited `AbpRoleManager<Role, User>` and ABP's permission management, not from custom methods on this class.
+
+---
+
+## IShaPermissionChecker
+
+`IShaPermissionChecker` extends ABP's `IPermissionChecker` and is the interface you inject to ask "does the current user have this permission?":
 
 ```csharp
-public async Task AssignScopedRoleAsync(Guid userId, string roleName, string scope)
+public interface IShaPermissionChecker: IPermissionChecker
 {
-    var user = await _userRepository.GetAsync(userId);
-    if (user == null)
-        throw new Exception("User not found");
+    Task ClearPermissionsCacheForUserAsync(long userId, int? tenantId);
+    Task ClearPermissionsCacheAsync();
 
-    var scopedRole = new ScopedRole
-    {
-        RoleName = roleName,
-        Scope = scope
-    };
-
-    await _scopedRoleRepository.InsertAsync(scopedRole);
+    Task<bool> IsGrantedAsync(string permissionName, EntityReferenceDto<string> permissionedEntity);
+    Task<bool> IsGrantedAsync(long userId, string permissionName, EntityReferenceDto<string> permissionedEntity);
+    bool IsGranted(string permissionName, EntityReferenceDto<string> permissionedEntity);
+    bool IsGranted(long userId, string permissionName, EntityReferenceDto<string> permissionedEntity);
 }
 ```
 
-:::info To Be Completed
-TODO: Expand with additional examples of RoleManager methods and usage
+`permissionedEntity` lets a permission check be scoped to a specific entity (for example, a permission that only applies within a particular organisation), matching the entity-scoped roles described elsewhere in the security docs. Pass `null` for a plain, unscoped permission check. The inherited `AuthorizeAsync(requireAll, permissionNames)` from `IPermissionChecker` throws if the current user lacks the required permission(s), and is what Shesha's own authorization pipeline calls internally (see below).
+
+---
+
+## IPermissionedObjectManager
+
+Shesha represents every securable endpoint, form, and other protected object as a **Protected Object** (`type@action`, for example `Shesha.Core.Person@Update`), each with its own configured access level and required permissions. `IPermissionedObjectManager` is the service that reads and writes that configuration - `GetOrDefaultAsync`, `GetAllFlatAsync`/`GetAllTreeAsync`, and `SetPermissionsAsync` are the methods you would use to inspect or change a protected object's permissions from code. See [Endpoint Permissions](/docs/fundamentals/security/endpoint-permissions) for how this system works end to end.
+
+---
+
+## ObjectPermissionChecker
+
+`ObjectPermissionChecker` (implementing `IObjectPermissionChecker`) is what actually enforces access to a protected object, combining the two services above: it looks up the object's configured access level and required permissions via `IPermissionedObjectManager`, then calls `IShaPermissionChecker.AuthorizeAsync` with those permissions.
+
+**Example - How a request is authorized internally:**
+
+```csharp
+var permission = await _permissionedObjectManager.GetOrDefaultAsync($"{permissionedObject}@{method}", objectType);
+
+// requireAll is false - the user only needs ONE of the listed permissions, not all of them
+await _permissionChecker.AuthorizeAsync(false, permission.ActualPermissions.ToArray());
+```
+
+This is the same check that runs automatically for every `[SheshaAuthorize]`-protected endpoint - you would only call it directly if you need to authorize something outside that normal request pipeline.
+
+:::note
+There is no Shesha-specific `ICurrentUser` interface, `UserManager` with custom role/permission methods, or `ScopedRole` entity in the framework. To get the current user's ID, inject ABP's standard `IAbpSession` (`AbpSession.UserId`); to manage user accounts, use ABP's standard `UserManager<User>`. Permission checks always go through `IShaPermissionChecker` as described above.
 :::
-
-## `UserManager`
-The `UserManager` is responsible for managing user accounts, including creating, updating, and deleting users. It also handles user authentication and authorization, ensuring that users can only access resources they are permitted to.
-The `UserManager` works closely with the `RoleManager` to assign roles to users and check their permissions. It provides methods to retrieve user information, such as roles and permissions, and to validate user credentials during login.
-
-:::info To Be Completed
-TODO: Expand with examples of UserManager methods and usage
-:::
-
-## `ICurrentUser`
-The `ICurrentUser` interface is designed to provide access to the current user's information, including their roles and permissions. It allows you to check if the user is in a specific role or has a specific permission, and it can also provide scoped roles and permissions based on the context of the user's actions.
-
-### Checking User Roles
-
-```csharp
-public async Task<bool> IsInRoleAsync(Guid userId, string roleName, string scope)
-{
-    var userRoles = await _scopedRoleRepository.GetUserRolesAsync(userId);
-    return userRoles.Any(r => r.RoleName == roleName && r.Scope == scope);
-}
-```
-
-### Checking User Permissions
-```csharp
-public async Task<bool> HasPermissionAsync(Guid userId, string permissionName)
-{
-    var userPermissions = await _scopedRoleRepository.GetUserPermissionsAsync(userId);
-    return userPermissions.Any(p => p.Name == permissionName);
-}
-```

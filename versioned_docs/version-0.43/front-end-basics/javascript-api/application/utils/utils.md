@@ -1,29 +1,46 @@
+---
+sidebar_label: Utils
+title: Utils
+---
+
 # Utils
 
-The **application.utils** object provides access to the utils API. This object gives access to utility functions that can be used to perform different actions.
+The `application.utils` object gives your form scripts a way to build strings from a template and some data, without writing your own string-replacement logic. It currently exposes a single function, `evaluateString`.
 
-## `application.utils.evaluateString`
+---
 
-This function can be used to evaluate a string that uses Mustache syntax (see [Mustache syntax](https://mustache.github.io/)).
+## application.utils.evaluateString
+
+Evaluates a template string written in [Mustache syntax](https://mustache.github.io/) against a data object, replacing each `{{ }}` placeholder with the matching value from that object.
 
 ```typescript
-application.utils.evaluateString(expression: string)
+application.utils.evaluateString(template: string, data: any): string
 ```
-### Example
-```typescropt
-// Example record data
+
+**Form type to use:** Any form type - `application` is available everywhere standard script variables are.
+
+**Example - Build a summary line from record data:**
+
+```javascript
 const data = {
-  id: "REC-1001",
-  name: "Shesha",
-  status: "Active"
+  id: 'REC-1001',
+  name: 'Shesha',
+  status: 'Active',
 };
 
-// Mustache expression using data.id
-const expression = "Record {{data.id}} belongs to {{data.name}} and is currently {{data.status}}.";
+const template = 'Record {{id}} belongs to {{name}} and is currently {{status}}.';
 
-// Evaluate the expression
-const result = application.utils.evaluateString(expression, { data });
+const result = application.utils.evaluateString(template, data);
 
 console.log(result);
-// Output: "Record REC-1001 belongs to Shesha and is currently Active."
+
+// result: "Record REC-1001 belongs to Shesha and is currently Active."
 ```
+
+:::tip Formatting dates
+The data object passed in automatically gets a `dateFormat` helper you can wrap around a date value, so you don't have to format it yourself first:
+
+```javascript
+const template = 'Created on {{#dateFormat}}{{createdDate}}{{/dateFormat}}.';
+```
+:::

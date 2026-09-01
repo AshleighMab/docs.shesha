@@ -1,7 +1,19 @@
-# Validation Errors
-The Validation Errors component displays validation messages triggered by user input or programmatic checks. It helps guide users by surfacing required fields, invalid entries, or custom business logic warnings in a centralized and styled display.
+---
+sidebar_label: Validation Errors
+title: Validation Errors
+---
 
-![Image](../data-display/images/validationerror1.png)
+# Validation Errors
+
+The Validation Errors component displays the current form's validation errors as a single alert banner. Add it to a form when you want a centralised summary of what's wrong, instead of relying only on the red messages shown under each individual field.
+
+![Image](./images/validationerror1.png)
+
+:::note Only visible with errors at runtime
+The component always shows validation errors for the whole form, not a specific field, and it isn't tied to a Property Name. In the form designer, it shows a placeholder message instead of real errors ("Validation Errors (visible in the runtime only)") - open the form at runtime and trigger a validation failure to see the actual banner.
+:::
+
+---
 
 ## Properties
 
@@ -9,8 +21,6 @@ The following properties are available to configure the behavior of the componen
 
 ### Common
 
-#### **Component Name** `string`  
-A unique identifier used to reference this validation block within the form.
-
-#### **Hide** `boolean`  
-Controls the visibility of the component using conditional logic.
+:::note No Hide setting
+Validation Errors does not expose a Hide property - it is designed to always be present on the form so validation feedback is never accidentally hidden.
+:::

@@ -1,35 +1,36 @@
+---
+sidebar_label: Card
+title: Card
+---
+
 # Card
 
-The Card component provides a styled container for grouping and displaying UI elements with optional headings, visibility control, and custom styling support. It acts as a layout and design tool that enhances readability and structure, especially in complex interfaces with multiple sections.
-
+The Card component wraps other components in a styled container with an optional heading, giving you a visually distinct section on the form. Use it to group related fields together and separate them visually from the rest of the form.
 
 ![Image](../Layouts/images/cards1.png)
 
 ![Image](../Layouts/images/cards2.png)
 
+:::info Two separate drop areas
+A Card has two independent places to drop components: the main **content** area, and a **header** area next to the heading text (useful for a small action button or icon alongside the title). Dragging a component onto the header area keeps it separate from the card's body.
+:::
 
-## **Properties**
+---
 
-The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)).
+## Properties
 
+The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)). Card groups its settings into **Common** and **Appearance** tabs (plus a **Security** tab holding only the standard Permissions setting, not covered further here).
 
 ### Common
 
-#### **Component Name** `string`  
-Unique identifier used to bind the card to your form or context. *(Required)*  
-_Example: `exampleCard` — This is just for illustration; you can use any unique name._
+#### **Heading** `string`
 
-#### **Heading** `string`  
-Optional heading text displayed at the top of the card.
+The text displayed at the top of the card. This is a scriptable field, so it can be computed rather than fixed.
 
-#### **Hide** `boolean`  
-Toggles the visibility of the card.
+#### **Hide Heading** `boolean`
 
-#### **Hide Heading** `boolean`  
-Controls whether the heading should be hidden even if provided.
+Hides the heading area entirely, even if a Heading value is set and even if components have been dropped into the header area.
 
-#### **Hide When Empty** `boolean`  
-Hides the entire card if all child components are hidden or empty, based on logic or visibility conditions.
+#### **Hide When Empty** `boolean`
 
-
-
+Hides the card when all of its child components are hidden or have no content.

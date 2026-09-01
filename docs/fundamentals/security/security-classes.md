@@ -1,66 +1,114 @@
 ---
 sidebar_label: Security Classes and Interfaces
-position: 5
+sidebar_position: 5
 title: Security Classes and Interfaces
 ---
 
 # Security Classes and Interfaces
-Shesha's security framework includes several key classes and interfaces that work together to provide a robust security model. These components are designed to manage user roles, permissions, and access control effectively.
+
+Shesha's authorization system is built from a handful of cooperating classes: one that manages roles, one that checks whether a user holds a permission, one that manages the "Protected Objects" a permission applies to, and one that ties the two together to authorize a request. This page covers each of them, verified against the actual `shesha-core` source rather than a general description.
+
+---
 
 ## `RoleManager`
-The `RoleManager` is a key component in Shesha's security framework, responsible for managing roles and permissions. It provides methods to create, update, delete, and assign roles to users, as well as to check if a user has a specific role or permission.
-The `RoleManager` is typically used in conjunction with the `ICurrentUser` interface to enforce security policies and ensure that users can only perform actions they are authorized for.
 
-### Assigning Roles Programmatically
-To assign roles programmatically, you can use the following example code. This code demonstrates how to assign a scoped role to a user and link it with specific permissions.
+`RoleManager` extends ASP.NET Identity's `AbpRoleManager<Role, User>` and adds two Shesha-specific overrides:
 
-```csharp
-public async Task AssignScopedRoleAsync(Guid userId, string roleName, string scope)
-{
-    var user = await _userRepository.GetAsync(userId);
-    if (user == null)
-        throw new Exception("User not found");
+| Method | What it does |
+|---|---|
+| `CheckDuplicateRoleNameAsync(expectedRoleId, name, displayName)` | Throws a friendly exception if another role already uses the given name or display name |
+| `GetRoleByName(roleName)` | Looks up a role by name, throwing if none exists |
 
-    var scopedRole = new ScopedRole
-    {
-        RoleName = roleName,
-        Scope = scope
-    };
+Everything else you'd expect from a role manager (create, update, delete, assign to users) comes from the inherited `AbpRoleManager` base class, not from Shesha-specific code.
 
-    await _scopedRoleRepository.InsertAsync(scopedRole);
-}
-```
-
-:::info To Be Completed
-TODO: Expand with additional examples of RoleManager methods and usage
+:::note
+There is no Shesha-specific `UserManager` with custom role or permission methods, and no `ScopedRole` entity or `AssignScopedRoleAsync` method anywhere in the codebase. If you need user/role assignment, use the inherited ABP Identity APIs directly.
 :::
 
-## `UserManager`
-The `UserManager` is responsible for managing user accounts, including creating, updating, and deleting users. It also handles user authentication and authorization, ensuring that users can only access resources they are permitted to.
-The `UserManager` works closely with the `RoleManager` to assign roles to users and check their permissions. It provides methods to retrieve user information, such as roles and permissions, and to validate user credentials during login.
+---
 
-:::info To Be Completed
-TODO: Expand with examples of UserManager methods and usage
+## `IShaPermissionChecker`
+
+`IShaPermissionChecker` extends ABP's `IPermissionChecker` and adds the actual permission-checking surface used throughout Shesha:
+
+```csharp
+public interface IShaPermissionChecker : IPermissionChecker
+{
+    Task ClearPermissionsCacheForUserAsync(long userId, int? tenantId);
+    Task ClearPermissionsCacheAsync();
+
+    Task<bool> IsGrantedAsync(string permissionName, EntityReferenceDto<string> permissionedEntity);
+    Task<bool> IsGrantedAsync(long userId, string permissionName, EntityReferenceDto<string> permissionedEntity);
+
+    bool IsGranted(string permissionName, EntityReferenceDto<string> permissionedEntity);
+    bool IsGranted(long userId, string permissionName, EntityReferenceDto<string> permissionedEntity);
+}
+```
+
+The `permissionedEntity` parameter lets a permission check be scoped to a specific entity reference, rather than only checking a permission globally.
+
+:::note
+There is no `ICurrentUser` interface in Shesha. Current-user permission and role checks go through `IShaPermissionChecker` and the standard ABP session/user APIs, not a Shesha-specific current-user abstraction.
 :::
 
-## `ICurrentUser`
-The `ICurrentUser` interface is designed to provide access to the current user's information, including their roles and permissions. It allows you to check if the user is in a specific role or has a specific permission, and it can also provide scoped roles and permissions based on the context of the user's actions.
+---
 
-### Checking User Roles
+## `IPermissionedObjectManager`
+
+Shesha calls an API endpoint, form, or component that can be permission-restricted a **Protected Object**. `IPermissionedObjectManager` manages these:
+
+| Method | What it does |
+|---|---|
+| `GetOrDefaultAsync(objectName, objectType)` | Gets a Protected Object's permission settings by name (format `type@action`), or a default if none is configured |
+| `SetPermissionsAsync(objectName, access, permissions)` | Sets the required access level and permissions for a Protected Object |
+| `GetAllFlatAsync` / `GetAllTreeAsync` | List all Protected Objects, flat or hierarchical |
+| `IsActionDescriptorEnabledAsync(actionDescriptor)` | Checks whether an MVC action is disabled as a Protected Object |
+
+---
+
+## `ObjectPermissionChecker`
+
+`ObjectPermissionChecker` (implementing `IObjectPermissionChecker`) is the class that actually ties `IPermissionedObjectManager` and `IShaPermissionChecker` together to authorize a request. Its `AuthorizeAsync` method is the real internal entry point Shesha's endpoint authorization goes through:
 
 ```csharp
-public async Task<bool> IsInRoleAsync(Guid userId, string roleName, string scope)
+[UnitOfWork]
+public async Task AuthorizeAsync(
+    bool requireAll,
+    string permissionedObject,
+    string method,
+    string objectType,
+    bool IsAuthenticated,
+    RefListPermissionedAccess? replaceInherited = null)
 {
-    var userRoles = await _scopedRoleRepository.GetUserRolesAsync(userId);
-    return userRoles.Any(r => r.RoleName == roleName && r.Scope == scope);
+    if (!_authConfiguration.IsEnabled)
+        return;
+
+    var methodName = PermissionedObjectManager.GetCrudMethod(method, method);
+    var permissionName = $"{permissionedObject}@{methodName}";
+
+    var permission = await _permissionedObjectManager.GetOrDefaultAsync(permissionName, objectType);
+
+    var actualAccess = replaceInherited != null && permission?.ActualAccess == RefListPermissionedAccess.Inherited
+        ? replaceInherited
+        : permission?.ActualAccess;
+
+    if (permission == null
+        || actualAccess == RefListPermissionedAccess.AllowAnonymous
+        || actualAccess == RefListPermissionedAccess.AnyAuthenticated && IsAuthenticated)
+        return;
+
+    if (!IsAuthenticated)
+        throw new AbpAuthorizationException("Current user did not login to the application!");
+
+    if (actualAccess == RefListPermissionedAccess.Disable)
+        throw new EntityNotFoundException("Not found");
+
+    if (actualAccess == RefListPermissionedAccess.RequiresPermissions
+        && (permission.ActualPermissions == null || !permission.ActualPermissions.Any()))
+        throw new AbpAuthorizationException("Access Denied");
+
+    await _permissionChecker.AuthorizeAsync(false, permission.ActualPermissions?.ToArray());
 }
 ```
 
-### Checking User Permissions
-```csharp
-public async Task<bool> HasPermissionAsync(Guid userId, string permissionName)
-{
-    var userPermissions = await _scopedRoleRepository.GetUserPermissionsAsync(userId);
-    return userPermissions.Any(p => p.Name == permissionName);
-}
-```
+Reading this top to bottom shows the actual precedence Shesha applies: authorization is skipped entirely if it's globally disabled, `AllowAnonymous`/`AnyAuthenticated` short-circuits the check, an unauthenticated caller is rejected before anything else, `Disable` returns a 404 rather than a 401/403, and only then does it fall through to checking the object's configured permissions via `IShaPermissionChecker`.

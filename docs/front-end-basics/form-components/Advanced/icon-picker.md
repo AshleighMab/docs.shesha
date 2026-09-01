@@ -1,33 +1,48 @@
+---
+sidebar_label: Icon Picker
+title: Icon Picker
+---
+
 # Icon Picker
 
-The Icon Picker component provides an interface for selecting icons from a library. It enables users to visually browse and choose icons to represent actions, statuses, or decorative elements in forms. This component is ideal for customizing UI elements where iconography enhances clarity or aesthetics. The selected icon is stored as a string (typically the icon name) and can be styled using size, color, and alignment options.
+The Icon Picker component lets a user choose an icon from Shesha's icon library by clicking a button that opens an icon browser. The chosen icon's name is stored as the component's value, so it binds to a text field on your entity like any other input.
 
 ![Image](../Advanced/images/iconpicker1.png)
+
+:::note Shown in the toolbox as "Icon"
+The component's internal type is `iconPicker`, but it appears in the form designer's toolbox labelled just **Icon**.
+:::
+
+---
 
 ## Properties
 
 The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)).
 
-
 ### Common
 
-#### Default Icon `object`
-Set a default icon from the icon library.
-____
+#### **Property Name** `string`
+
+The icon the user picks is written here, and an existing value shown here is what pre-selects an icon when the form loads - there is no separate "default icon" setting.
+
+___
 
 ### Appearance
 
+The next three properties control how the picked icon renders. Together they replace the standard common Font group with a reduced set specific to this component (no family or weight options).
+
 #### **Size** `number`
-Controls the icon size.
+
+The icon's font size.
 
 #### **Color** `object`
 
-Sets the icon color.
+A colour picker for the icon.
 
-#### **Icon Align** `object`
-Alignment of the selected icon:
-- **Left** (`start`) *(default)*
-- **Center** (`center`)
-- **Right** (`end`)
+#### **Align** `object`
 
+Positions the icon within the component's width: `left`, `center`, or `right`.
 
+#### **Custom Styles** `function`
+
+A script that returns the style of the element as an object, conforming to `CSSProperties`.

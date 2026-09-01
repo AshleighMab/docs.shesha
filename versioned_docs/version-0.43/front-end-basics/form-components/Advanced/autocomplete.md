@@ -1,93 +1,148 @@
+---
+sidebar_label: Autocomplete
+title: Autocomplete
+---
+
 # Autocomplete
 
-
-The Autocomplete component enhances user input fields with dynamic suggestions based on the user's typing. It is an input box with text hints, and users can type freely. The keyword is aiding input.
+The Autocomplete component is a search-as-you-type input that looks up matching records or values while the user types, instead of asking them to pick from a long static list. It can search a Shesha entity, or a custom URL endpoint you provide.
 
 ![Image](../Advanced/images/autocomplete1.png)
 
+---
+
 ## Properties
 
-The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)).
+The following properties are available to configure the behavior of the component from the form editor (this is in addition to [common properties](/docs/front-end-basics/form-components/common-component-properties)). 
 
-### Data
+### Display
 
-#### **Disable Search** ``boolean``
-Hides the search bar and disables real-time filtering.
+#### **Selection Mode** `string`
 
-#### **Selection Mode** ``string``
-Sets how many options can be selected:
+Whether the user can select a single item (`single`, the default) or multiple items (`multiple`).
 
-- Single *(default)*
-- Multiple
+#### **Disable Search** `boolean`
 
+Hides the search box and disables typing-based filtering, leaving only a plain dropdown of items.
 
-#### **Data Source Type** `object`  
-Choose source for suggestions:
-- Entities List *(default)*
-- URL
+#### **Hidden** `boolean`
 
-#### **Entity Type** `string`  
-Entity to search within.
-
-#### **Data Source URL** `string`  
-External data source URL.
-
-#### **Value Prop Name** `string`  
-Value property in external source.
-
-#### **Query Param** `string`  
-Parameter for search queries.
-
-#### **Entity Filter** `object`  
-Filter options using a query builder.
-
-#### **Custom Source URL** `string`  
-Custom URL for fetching data.
-
-#### **Value Format** `string`  
-How values are formatted:
-- Entity Reference *(default)*
-- Simple ID
-- Custom
-
-#### **Display Property** `object`  
-Property used to display selected value.
-
-#### **Display Value Function** `function` (when Value Format is Custom)  
-Function to render display text.
-
-#### **Allow Free Text** `boolean` (when Value Format is Simple ID)  
-Allow user to type custom text.
-
-#### **Key Value Function** `function` (when Value Format is Custom)  
-Function for key value mapping.
-
-#### **Value Function** `function` (when Value Format is Custom)  
-Function to get value.
-
-#### **Key Value Function** `function` (when Value Format is Custom)  
-Function for key value mapping.
-
-#### **Filter Selected Function** `function` (when Value Format is Custom)  
-Function to filter selected items.
-
-#### **Use Quickview** `boolean`  
-Enable modal quickview for selections.
-
-#### **Fields to Fetch** `object`  
-Additional fields to load.
-
-#### **Sort By** `object`  
-Sorts options by a specified property.
-
-#### **Grouping** `object`  
-Groups options by a property.
+A plain on/off checkbox controlling whether the component is visible on the form. It has no JavaScript-expression mode.
 
 ___
 
-# Autocomplete examples
+### Data
 
-The Autocomplete component can work with two types of list sources - standard Entities endpoints (`Entities List` Data Source Type) and custom endpoints (`URL` Data Source Type). Custom endpoints should support `string term` parameter for filtering data. The responses from the endpoints should be either a standard response with a list of entities or an array.
+#### **Default Value** `function`
+
+A script that returns the component's default value. Has access to the full standard set of script variables (`data`, `form`, `formMode`, `globalState`, `http`, `message`, `moment`, `setFormData`, `setGlobalState`) plus the row currently selected in a Data Table context, if any.
+
+#### **Data Source type** `string`
+
+Where the component fetches its suggestions from:
+
+| Option | Description |
+|---|---|
+| **Entities List** | Searches a Shesha entity via the standard entities API |
+| **Url** | Searches a custom endpoint you provide |
+
+The next four properties are shown only when Data Source type is **Url**.
+
+#### **Data Source Url** `string`
+
+The endpoint to call - it must accept a `term` query parameter for the typed search text and return items shaped `{ value, displayText }`.
+
+#### **Key Prop Name** `string`
+
+Lets you use a different response shape by naming the field to read as each item's key (`value`) instead of the default.
+
+#### **Value Prop Name** `string`
+
+Lets you use a different response shape by naming the field to read as each item's label (`displayText`) instead of the default.
+
+#### **Query Param** `object`
+
+Adds extra fixed or templated query string parameters to every request.
+
+___
+
+The next three properties are shown only when Data Source type is **Entities List**.
+
+#### **Entity Type** `string`
+
+Picks which entity to search.
+
+#### **Display Property** `string`
+
+Names the field used as each option's display text. Leave empty to use the entity's default display name.
+
+#### **Entity Filter** `object`
+
+A query-builder filter that narrows the search to a subset of records. It can't be configured until **Entity Type** is set.
+
+#### **Use raw values** `boolean`
+
+Controls how the selected item is stored on the form's data:
+
+| Use raw values | Stored value |
+|---|---|
+| Off (default) | An entity reference object: `{ id, _className, _displayName }` |
+| On | The raw key value only (for example, just the ID string) |
+
+#### **Allow Free Text** `boolean`
+
+Shown only when Data Source type is **Url** and **Use raw values** is on. Lets the user submit typed text that doesn't match any suggestion, instead of being restricted to items returned by the endpoint.
+
+<LayoutBanners url="https://app.guideflow.com/embed/6kw11ndfzp" type={1}/>
+
+<LayoutBanners url="https://app.guideflow.com/embed/ok8eev2fxk" type={1}/>
+
+___
+
+### Events
+
+#### **On Change** `function`
+
+Fires when the user selects an option or types a value. Alongside the standard script variables, it also exposes `value` (the component's new value) and `option` (the metadata of the selected item).
+
+___
+
+### Validation
+
+Only contains the standard **Required** field.
+
+___
+
+### Quickview
+
+#### **Use Quickview** `boolean`
+
+When enabled, clicking a selected item opens it in a read-only Quickview dialog instead of just showing its label. Enabling this reveals four more fields:
+
+| Field | What it controls |
+|---|---|
+| **Form Path** | The form used to render the Quickview dialog's content |
+| **Get Entity Url** | The endpoint used to fetch the full entity for display |
+| **Display Property Name** | The property shown as the Quickview's title |
+| **Width** | The width of the Quickview dialog |
+
+___
+
+### Style
+
+The Style panel includes Size, Height, Width, a Hide Border toggle (with Border Width, Radius, Type, and Color), Background Color, Margin & Padding, and a Style script.
+
+___
+
+### Security
+
+Only contains the standard **Permissions** field.
+
+---
+
+## Response Formats
+
+Regardless of Data Source type, custom URL endpoints must accept a `term` query parameter for filtering, and return either a standard Shesha list response or a plain array:
 
 ```ts
 export interface ITableDataResponse {
@@ -96,12 +151,9 @@ export interface ITableDataResponse {
 }
 ```
 
+### Entities List
 
-## • `Entities List` Data Source Type
-
-<LayoutBanners url="https://app.guideflow.com/embed/6kw11ndfzp" type={1}/>
-
-If the standard entities endpoint is used, the backend returns list of entities with items in the following format
+If the standard entities endpoint is used, the backend returns a list of entities shaped like:
 
 ```js
 {
@@ -111,7 +163,7 @@ If the standard entities endpoint is used, the backend returns list of entities 
 }
 ```
 
-If you specify a value for **Display Property**, the received data will contain an additional field that will be used as name of items. For example **Display Property** = `firstName`
+If you set **Display Property** (for example `firstName`), the response includes that extra field so it can be used as the item's display text:
 
 ```js
 {
@@ -122,9 +174,7 @@ If you specify a value for **Display Property**, the received data will contain 
 }
 ```
 
-### • `Entity reference` Value format
-
-If you will use `Entity reference` Value format then the selected value will be stored in the model as
+With **Use raw values** off (the default), the selected value is stored as an entity reference:
 
 ```js
 {
@@ -136,41 +186,9 @@ If you will use `Entity reference` Value format then the selected value will be 
 }
 ```
 
-### • `Simple ID` Value format
+### Url
 
-If you will use `Simple ID` Value format then the selected value will be stored in the model as
-
-```js
-{
-    "autocomplete": "d519b92f-86e9-4f0f-8df4-00aae8a43158"
-}
-```
-
-If you specify a value for **KeyProperty**, the received data will contain an additional field that will be used as selected value. For example **Display Property** = `firstName`, **Key Property** = `lastName`
-
-```js
-// Received item
-{
-    "id": "d519b92f-86e9-4f0f-8df4-00aae8a43158",
-    "_className": "Shesha.Domain.Person",
-    "_displayName": "Alex Stephens",
-    "firstName": "Alex",
-    "lastName": "Stephens"
-}
-
-// Selected value
-{
-    "autocomplete": "Stephens"
-}
-```
-
-## • `URL` Data Source Type
-
-<LayoutBanners url="https://app.guideflow.com/embed/ok8eev2fxk" type={1}/>
-
-### • `Simple ID` Value format
-
-Standard format of response from custom endpoints
+The standard response shape from a custom endpoint is:
 
 ```js
 // Received item
@@ -179,92 +197,10 @@ Standard format of response from custom endpoints
     "displayText": "First option"
 }
 
-// Selected value
+// Selected value (Use raw values on)
 {
     "autocomplete": 1
 }
 ```
 
-But you can use source with any other format of items. To do this, you need to specify in **Display Property** the field that will be used as the name of items and in **Key Property** the field that will be used as the value.
-
-## • General Display value Function
-
-Regardless of the selected value of **Data Source type** you can use **Display value Function**. This is a script to get the displayed name of items. In this script, you can use any field from the received data. For `Entities list` mode, you can request additional fields using the  `Fields to fetch` setting. For `URL` mode you can use only fields provided by the endpoint.
-
-```js
-//#region Exposed variables
-import {
-  item
-} from './displayValueFunc.variables';
-//#endregion
-
-const displayValueFunc = () => {
-  return `<span style="color: red">${item.firstName}</span> <span style="color: green">${item.lastName}</span>`;
-};
-```
-
-![image](images/autocomplete3.png)
-
-## • General `Custom` Value format
-
-Regardless of the selected value of **Data Source type** you can use `Custom` **Value format**.
-
-Without additional settings or with only **Display Property** and **Key Property** settings, this mode is similar to `SimpleID` **Value format**.
-
-**To** **set** up a **custom** **mode**, you **can** **use** the following **methods**:
-
-**Value Function** - uses Item value received from the backend to return value in custom format.
-
-**Key value Function** - uses value in custom format to return key value. Used with **Key Property Name** to create filter for request data
-
-**Display value Function** - gets the display name of items. You can use **Display Property** instead or leave them empty to use standard display properties
-
-### Example
-
-Configure Autocomplete to get additional fields (`firstName`, `gender`, `dateOfBirth`). Use `firstName` as Key property.
-
-![image](images/autocomplete4.png)
-
-Configure **Value function** to return value in custom format
-
-```ts
-const outcomeValueFunc = () => {
-    return `${item.firstName}|${item.gender}|${item.dateOfBirth}`
-};
-```
-
-Now, when selecting a list item, the value will have a custom format.
-
-```js
-{
-  "autocomplete": "Alex|1|2088-06-06T00:00:00"
-}
-```
-
-Configure **Key value function** to get correct Key value (needed to get correct item from the backend). Take first element from split value as this is `firstName`
-
-```ts
-const keyValueFunc = () => {
-    return value?.split('|')[0];
-};
-```
-
-### Advanced filtering
-
-In the example above, we use only one `firstName` field. However, one field may not be enough to uniquely identify an item. For more accurate identification, you can use **Filter selected Function**. This method returns a filter in [JsonLogic](https://jsonlogic.com/) format for more accurate selection of an element on the backend.
-
-```ts
-const filterSelectedFunc = () => {
-    const parts = value?.split('|');
-    if (parts.length < 2)
-        return null;
-    return {
-        and: [
-            {"==":[{"var":"firstName"}, parts[0]]},
-            {"==":[{"var":"gender"}, Number(parts[1])]}
-        ]
-    };
-};
-```
-
-This script uses two fields as a compound key for filtering.
+You can use a source with a different response shape by setting **Key Prop Name** and **Value Prop Name** to the fields that should be read as the value and label instead.

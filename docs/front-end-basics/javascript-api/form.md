@@ -1,100 +1,165 @@
-# Form instance API
+---
+sidebar_label: Form instance API 
+title: Form Instance API
+---
 
-`form` object provides access to the form instance. It has object and function properties that can be used to interact with the form.
+# Form Instance API
 
-## `form.addDelayedUpdateData`
+The `form` object gives your scripts access to the current form: its data, its mode, and the functions to read or update field values, submit, and report validation errors. It's available in every script alongside the other standard script variables.
 
-This function is used to add data to the form that will be updated after a delay.
+---
 
-The function takes the following parameters:
+## Reading Form State
 
-- `data`: model data object for updating.
+#### **form.data** `object`
 
-```typescript
-form.addDelayedUpdateData(data: any) => IDelayedUpdateGroup[]
-```
-
-## `form.clearFieldsValue`
-
-This function is used to clear the value of the fields in the form.
-
-```typescript
-form.clearFieldsValue() => void
-```
-
-## `form.data`
-
-This object provides access to the form data. It is the same object as the top-level `data` object. You can read the form data using this object as shown below:
+Provides access to the form data. This is the same object as the top-level `data` variable.
 
 ```typescript
 const formData = form.data;
 ```
 
-## `form.defaultApiEndpoints`
+#### **form.formMode** `string`
 
-Default API endpoints (create, read, update, delete). Note: available only when `Model type` of the form is an existing `entity`.
+Returns the current form mode. It is one of:
 
-The object has the following properties:
-- create: The API endpoint for creating a new record in the entity.  
-- read: The API endpoint for reading a record from the entity.
-- update: The API endpoint for updating a record in the entity.
-- delete: The API endpoint for deleting a record from the entity.
-- list: The API endpoint for listing records from the entity.
-
-Example: When the `Model type` of the form is an existing `Shesha.Domain.Person`, the `defaultApiEndpoints` object will have the following properties:
-
-![Model binding](./images/model-binding.png)
-
-
-```typescript
-console.log(form.defaultApiEndpoints);
-```  
-
-which will be logged as:
-
-```json
-{
-	"read": {
-		"httpVerb": "GET",
-		"url": "api/dynamic/Shesha/Person/Crud/Get"
-	},
-	"list": {
-		"httpVerb": "GET",
-		"url": "api/dynamic/Shesha/Person/Crud/GetAll"
-	},
-	"create": {
-		"httpVerb": "POST",
-		"url": "api/dynamic/Shesha/Person/Crud/Create"
-	},
-	"update": {
-		"httpVerb": "PUT",
-		"url": "api/dynamic/Shesha/Person/Crud/Update"
-	},
-	"delete": {
-		"httpVerb": "DELETE",
-		"url": "api/dynamic/Shesha/Person/Crud/Delete"
-	}
-}
-```
-
-## `form.formInstance`
-
-This object provides access to the form instance. This is the internal AndDesign form instance that renders the form, with it come utility functions that can be used to interact with the form.
-
-Please see the [Ant Design Form documentation](https://ant.design/components/form) for more information.
-
-## `form.formMode` 
-
-This property returns the form mode. It can be one of the following values:
 - `edit`
+- `readonly`
 - `designer`
 
-## `form.formSettings`
+#### **form.formSettings** `object`
 
-This object provides access to the configurable form settings. You will notice that these are the same sentence where in we configured the `Model Type` of the form earlier on this page.
-
-For example, in connection to the `Shesha.Domain.Person` model, the `formSettings` object above will have the following properties:
+Gives access to the form's own configuration, currently exposing only `modelType` - the entity type the form is bound to, if any.
 
 ```typescript
 console.log(form.formSettings);
 ```
+
+#### **form.defaultApiEndpoints** `object`
+
+The default CRUD API endpoints (`create`, `read`, `update`, `delete`, `list`), available only when the form's `Model type` is an existing entity.
+
+![Model binding](./images/model-binding.png)
+
+```typescript
+console.log(form.defaultApiEndpoints);
+```
+
+which logs:
+
+```json
+{
+  "read": {
+    "httpVerb": "GET",
+    "url": "api/dynamic/Shesha/Person/Crud/Get"
+  },
+  "list": {
+    "httpVerb": "GET",
+    "url": "api/dynamic/Shesha/Person/Crud/GetAll"
+  },
+  "create": {
+    "httpVerb": "POST",
+    "url": "api/dynamic/Shesha/Person/Crud/Create"
+  },
+  "update": {
+    "httpVerb": "PUT",
+    "url": "api/dynamic/Shesha/Person/Crud/Update"
+  },
+  "delete": {
+    "httpVerb": "DELETE",
+    "url": "api/dynamic/Shesha/Person/Crud/Delete"
+  }
+}
+```
+
+#### **form.initialValues** `object`
+
+The values the form had when it first loaded, before any user edits.
+
+#### **form.parentFormValues** `object`
+
+The field values of the parent form, if this form is being rendered inside a SubForm.
+
+#### **form.formArguments** `object`
+
+The arguments passed to the form by whatever opened it (for example, query parameters or values passed when navigating to the form).
+
+---
+
+## Updating Form Data
+
+#### **form.setFieldValue(name, value)** `function`
+
+Sets a single field's value by name.
+
+```typescript
+form.setFieldValue('firstName', 'Jane');
+```
+
+#### **form.setFieldsValue(values)** `function`
+
+Merges an object of field values into the form's current data.
+
+```typescript
+form.setFieldsValue({ firstName: 'Jane', lastName: 'Doe' });
+```
+
+#### **form.clearFieldsValue()** `function`
+
+Clears all field values on the form.
+
+```typescript
+form.clearFieldsValue();
+```
+
+#### **form.addDelayedUpdateData(data)** `function`
+
+Adds data to the form's deferred-update queue, returning the current list of pending delayed updates.
+
+```typescript
+form.addDelayedUpdateData(data: any) => IDelayedUpdateGroup[]
+```
+
+:::warning form.setFormData is deprecated
+`form.setFormData(payload)` is `@deprecated` and should not be used. Use `form.setFieldValue`/`form.setFieldsValue` instead.
+:::
+
+---
+
+## Submitting and Reporting Validation
+
+#### **form.submit()** `function`
+
+Submits the form, the same as clicking its Submit button.
+
+```typescript
+form.submit();
+```
+
+#### **form.setValidationErrors(payload)** `function`
+
+Sets the validation errors shown by a [Validation Errors](/docs/front-end-basics/form-components/data-display/validation-errors) component on the form. Accepts a string, an `IErrorInfo` object, an `IAjaxResponseBase` API error response, an Axios response wrapping one, or an `Error`.
+
+```typescript
+form.setValidationErrors('Something went wrong while saving.');
+```
+
+#### **form.getFormData()** `function`
+
+Returns the form's current data. Use this in places where you need the freshest data rather than a value captured in a closure.
+
+```typescript
+const currentData = form.getFormData();
+```
+
+---
+
+## Advanced
+
+#### **form.formInstance** `object`
+
+The underlying Ant Design form instance that renders the form. See the [Ant Design Form documentation](https://ant.design/components/form) for its full API.
+
+#### **form.shaForm** `object`
+
+The internal Shesha form instance. Prefer the methods and properties above for everyday scripting - this is an advanced escape hatch into Shesha's own form machinery.

@@ -1,24 +1,46 @@
-# On Data Loaded
+---
+sidebar_label: On After Data Load
+title: On After Data Load
+---
 
-This is an event that occurs when data has been loaded or retrieved for a specific entity or record, and the details view is being populated with that data. It's a point in the lifecycle of the details view where you can perform actions or logic that depend on the successful loading of data.
+# On After Data Load
 
-- **Benefit 1: Asynchronous Data Handling:**
-
-  - The `OnDataLoaded` event handler is valuable for handling asynchronous data loading processes. It provides a designated point in the application's lifecycle to respond to successful data retrieval, ensuring that subsequent actions are taken when the data is available.
-
-- **Benefit 2: UI Updates:**
-
-  - After data is loaded, the event handler allows you to update the user interface to reflect the loaded data. This can include populating UI elements, displaying relevant information, or triggering additional actions based on the retrieved data.
-
-- **Benefit 3: Error Handling:**
-
-  - The event handler can also handle errors that may occur during the data loading process. This includes displaying error messages or taking alternative actions in case of data retrieval failures.
-
-- **Benefit 4: Separation of Concerns:**
-  - By providing a clear separation of concerns, the `OnDataLoaded` event handler ensures that the logic for handling data loading events is encapsulated in one place. This contributes to a modular and maintainable codebase.
-
-## Usage Example
-
-In the example below, we are using the `On Data Loaded` Event Handler to preview a toast message to inform the user of the invoice that we are currently viewing:
+This event fires once a form has finished loading its data and applying it to the fields. Use it to run logic that depends on the record being fully loaded - for example, showing a summary message, or triggering a follow-up fetch based on the loaded record.
 
 ![On Data Loaded](./images/ondataloaded.png)
+
+---
+
+## When It Fires
+
+The event runs after the form's data has been fetched and applied to the fields, so `data` already reflects the loaded record. It fires each time the form (re)loads its data - for example when the form first opens, and again if it reloads with different form arguments.
+
+A companion **On Before Data Load** event fires just before loading starts, if you need logic to run beforehand instead.
+
+---
+
+## Available Variables
+
+The function is declared `async`, so you can safely `await` inside it. This is a form-level lifecycle setting rather than a component [Event](/docs/front-end-basics/form-components/common-component-properties#on-change-function), so its variables differ from the standard component-event set: it does not receive `mode` or `event`, but it does add a few form-specific ones.
+
+| Variable | What it gives you |
+|---|---|
+| `data` | The form's current data, now populated with the loaded record |
+| `initialValues` | The values the form had when it was first loaded, as a fixed snapshot |
+| `parentFormValues` | The field values of the parent form, if this form is open as a dialog opened from another form |
+| `form` | The form instance |
+| `globalState` / `setGlobalState` | The global application state, and a function to update it |
+| `pageContext` | The current [Page Context](/docs/front-end-basics/javascript-api/contexts/pageContext) |
+| `application` | The [Application API](/docs/front-end-basics/javascript-api/application) object |
+| `http` | An Axios instance for making HTTP requests |
+| `message` | Functions to show toast notifications |
+| `moment` | The Moment.js library |
+| `query` | The form's query-string parameters |
+
+**Form type to use:** Edit Form or Details View - any form type that loads an existing record.
+
+**Example - Show a toast naming the record just loaded:**
+
+```javascript
+message.info(`Viewing invoice ${data.invoiceNumber}`);
+```

@@ -1,100 +1,156 @@
+---
+sidebar_label: Form instance API
+title: Form instance API
+---
+
 # Form instance API
 
-`form` object provides access to the form instance. It has object and function properties that can be used to interact with the form.
+The `form` object gives your scripts access to the current form: its data, its mode, and a set of methods for updating fields, submitting, and showing loading feedback. It is available in any script alongside the other standard script variables.
 
-## `form.addDelayedUpdateData`
+---
 
-This function is used to add data to the form that will be updated after a delay.
+## Reading Form State
 
-The function takes the following parameters:
+#### **form.data** `object`
 
-- `data`: model data object for updating.
+The form's current data. This is the same object as the top-level `data` variable.
 
-```typescript
-form.addDelayedUpdateData(data: any) => IDelayedUpdateGroup[]
-```
+**Form type to use:** Any form type.
 
-## `form.clearFieldsValue`
+**Example - Read the form's data:**
 
-This function is used to clear the value of the fields in the form.
-
-```typescript
-form.clearFieldsValue() => void
-```
-
-## `form.data`
-
-This object provides access to the form data. It is the same object as the top-level `data` object. You can read the form data using this object as shown below:
-
-```typescript
+```javascript
 const formData = form.data;
 ```
 
-## `form.defaultApiEndpoints`
+#### **form.formMode** `string`
 
-Default API endpoints (create, read, update, delete). Note: available only when `Model type` of the form is an existing `entity`.
+The current form mode: `'designer'`, `'edit'`, or `'readonly'`.
 
-The object has the following properties:
-- create: The API endpoint for creating a new record in the entity.  
-- read: The API endpoint for reading a record from the entity.
-- update: The API endpoint for updating a record in the entity.
-- delete: The API endpoint for deleting a record from the entity.
-- list: The API endpoint for listing records from the entity.
+#### **form.formSettings** `object`
 
-Example: When the `Model type` of the form is an existing `Shesha.Domain.Person`, the `defaultApiEndpoints` object will have the following properties:
+The form's configurable settings, currently exposing `modelType` - the entity type the form is bound to.
+
+#### **form.defaultApiEndpoints** `object`
+
+The default CRUD endpoints Shesha generated for the form's bound entity: `create`, `read`, `update`, `delete`, and `list`. This is only populated when the form's Model Type is an existing entity - it is an empty object otherwise.
 
 ![Model binding](./images/model-binding.png)
 
+**Example - Inspect the generated endpoints for a form bound to `Shesha.Domain.Person`:**
 
-```typescript
+```javascript
 console.log(form.defaultApiEndpoints);
-```  
-
-which will be logged as:
+```
 
 ```json
 {
-	"read": {
-		"httpVerb": "GET",
-		"url": "api/dynamic/Shesha/Person/Crud/Get"
-	},
-	"list": {
-		"httpVerb": "GET",
-		"url": "api/dynamic/Shesha/Person/Crud/GetAll"
-	},
-	"create": {
-		"httpVerb": "POST",
-		"url": "api/dynamic/Shesha/Person/Crud/Create"
-	},
-	"update": {
-		"httpVerb": "PUT",
-		"url": "api/dynamic/Shesha/Person/Crud/Update"
-	},
-	"delete": {
-		"httpVerb": "DELETE",
-		"url": "api/dynamic/Shesha/Person/Crud/Delete"
-	}
+  "read": { "httpVerb": "GET", "url": "api/dynamic/Shesha/Person/Crud/Get" },
+  "list": { "httpVerb": "GET", "url": "api/dynamic/Shesha/Person/Crud/GetAll" },
+  "create": { "httpVerb": "POST", "url": "api/dynamic/Shesha/Person/Crud/Create" },
+  "update": { "httpVerb": "PUT", "url": "api/dynamic/Shesha/Person/Crud/Update" },
+  "delete": { "httpVerb": "DELETE", "url": "api/dynamic/Shesha/Person/Crud/Delete" }
 }
 ```
 
-## `form.formInstance`
+#### **form.initialValues** `object`
 
-This object provides access to the form instance. This is the internal AndDesign form instance that renders the form, with it come utility functions that can be used to interact with the form.
+The values the form had when it first loaded, before any user edits.
 
-Please see the [Ant Design Form documentation](https://ant.design/components/form) for more information.
+#### **form.parentFormValues** `object`
 
-## `form.formMode` 
+The field values of the parent form, if this form is a SubForm, modal, or other form nested inside another one.
 
-This property returns the form mode. It can be one of the following values:
-- `edit`
-- `designer`
+#### **form.formArguments** `object`
 
-## `form.formSettings`
+The arguments passed to the form by whatever opened it (for example, query parameters or navigation arguments).
 
-This object provides access to the configurable form settings. You will notice that these are the same sentence where in we configured the `Model Type` of the form earlier on this page.
+---
 
-For example, in connection to the `Shesha.Domain.Person` model, the `formSettings` object above will have the following properties:
+## Updating Form Data
+
+#### **form.setFieldValue** `function`
+
+Sets a single field's value, merging it into the form's existing data.
+
+**Form type to use:** Edit Form or Create Form.
+
+**Example - Set a single field:**
+
+```javascript
+form.setFieldValue('status', 1);
+```
+
+#### **form.setFieldsValue** `function`
+
+Sets multiple field values at once, merging them into the form's existing data.
+
+**Form type to use:** Edit Form or Create Form.
+
+**Example - Set multiple fields:**
+
+```javascript
+form.setFieldsValue({ status: 1, reviewedBy: application.user.userName });
+```
+
+#### **form.clearFieldsValue** `function`
+
+Clears all of the form's field values, replacing the data with an empty object rather than merging.
+
+**Form type to use:** Edit Form or Create Form.
+
+#### **form.addDelayedUpdateData** `function`
+
+Attaches any pending delayed updates (updates deferred until the form is saved, such as attachments queued by a file upload component) to a data object under a `_delayedUpdate` key, and returns the list of delayed update groups.
 
 ```typescript
-console.log(form.formSettings);
+form.addDelayedUpdateData(data: object) => IDelayedUpdateGroup[]
 ```
+
+#### **form.setFormData** `function`
+
+:::warning Deprecated
+This method is marked deprecated in the framework source. Use [`form.setFieldValue`](#formsetfieldvalue-function) or [`form.setFieldsValue`](#formsetfieldsvalue-function) instead.
+:::
+
+Sets the form's data directly from a `{ values, mergeValues }` payload.
+
+---
+
+## Submitting and Loading Feedback
+
+#### **form.submit** `function`
+
+Submits the form, the same as clicking its Submit button.
+
+**Form type to use:** Edit Form or Create Form.
+
+#### **form.showLoader** `function`
+
+Shows a blocking loader overlay scoped to this form, and returns an instance you can use to update its message or close it.
+
+**Form type to use:** Any form type.
+
+**Example - Show a loader while an async action runs:**
+
+```javascript
+const loader = form.showLoader('Saving...');
+await application.entities.shesha.Person.updateAsync({ input: { id: data.id, firstName: data.firstName } });
+loader.close();
+```
+
+#### **form.hideLoaders** `function`
+
+Hides all loaders currently shown for this form, including ones started elsewhere.
+
+---
+
+## Advanced
+
+#### **form.formInstance** `object`
+
+The underlying Ant Design `Form` instance that renders the form. See the [Ant Design Form documentation](https://ant.design/components/form) for its full API.
+
+#### **form.shaForm** `object`
+
+The internal Shesha form instance backing this form. This is an advanced, lower-level API - most scripts should use the methods above instead of reaching into `shaForm` directly.

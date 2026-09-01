@@ -3,87 +3,107 @@ sidebar_label: User Registration
 draft: false
 title: User Registration
 ---
+
 # User Registration
 
-This system provides a flexible way for users to create accounts on your platform. Think of it as a `customizable welcome desk` where you can choose exactly how you want your users to sign up. You can let them register using their email, phone number, and in the future, even their existing accounts from services like Google or Facebook.
+Shesha lets users create their own accounts instead of requiring an administrator to create every account manually. You choose exactly how people sign up (by email, by mobile number, or not at all), what verification they must complete first, and whether they need to fill in extra information before their account is usable.
 
-The system is designed to be user-friendly while maintaining security. You can choose what information to collect from users and customize the registration process to match your needs. For example, you might want to collect just basic information like name and email, or you might need additional details specific to your organization.
+---
 
-:::caution Rework Required
-TODO: Need to be updated to more clearly indicate how to configurate the user registration process. Possible updates include:
-- Explain that there are two main methods for user registration:
-  - **Self-registration**: Users can create their own accounts. Optional.
-  - **Admin registration**: Administrators create accounts for users. Reference /docs/for-administrators/user-management.md
-- Intro needs to be reworked to provide a clearer overview of the user registration process and customisation options available:
-  - Remove self-registration option
-  - Customising the registration form
-- Mermaid diagram is overly complex and can be removed
-- Screenshot of the registration settings
-- How to update the registration form
-- Registration of custom Person entity
-:::
+## Self-Registration vs Admin-Created Accounts
 
-## Key Features
+A user account can come into existence in a Shesha application in one of two ways:
 
-- Multiple ways to sign up (email, phone, or through other services)
-- Simple and secure verification process
-- Flexible information collection
-- Smooth transition from registration to using your service
+- **Self-registration** - the user creates their own account through the public registration form this page describes. It's optional: set **Supported Registration Method** (below) to **None** to turn it off entirely.
+- **Admin registration** - an administrator creates the account on the user's behalf instead. See [User Management](/docs/for-administrators/user-management) for that flow.
+
+The rest of this page covers self-registration.
+
+---
 
 ## Configuration Options
 
+These are configured through `UserManagementSettings`, the compound application setting that controls registration.
+
 ### Supported Registration Method
 
-The system allows selection of exactly one registration method through configuration. Only one method can be active at a time, and this setting determines how users will register on your platform.
+Exactly one registration method is active at a time.
 
-#### Available options:
-
-1. **None**
-    - Selection of this option completely disables new user registration.
-    - The Register link will be hidden from the login page
+| Option | Behaviour |
+|---|---|
+| **None** | New registration is disabled. The Register link is hidden from the login page. |
+| **Email Address** | Users register with their email address and must verify it before their account is usable. |
+| **Mobile Number** | Users register with their mobile number and must verify it with an OTP before their account is usable. |
 
 ![Disabled](images/registration/no-registration.png)
 
-> _**NOTE**: With the below options, the register link will show on the login page and will require input of chosen method to validate details
+When Email Address or Mobile Number is selected, the Register link appears on the login page and the user must supply and verify that detail:
 
- ![Enabled](images/registration/registration.png)
+![Enabled](images/registration/registration.png)
 
-2. **Email**
-    - Users register using their email address
-    - Email verification is mandatory (this is done through usage of an `OTP` or a `verification link`)
+**Email Address:**
 
-3. **SMS**
-    - Users register using their mobile phone number
-    - Mobile verification is mandatory through `OTP`
- ![Mobile](images/registration/mobile-otp.png)
+![Email verification](images/registration/email-otp.png)
+
+**Mobile Number:**
+
+![Mobile verification](images/registration/mobile-otp.png)
+
+:::note A fourth option exists but isn't wired up yet
+The underlying `SupportedRegistrationMethods` enum also defines an `OAuth` value, for registering via an external identity provider. It isn't currently used by the registration flow itself - it's unrelated to the separate [Custom Authentication Providers](/docs/fundamentals/security/authentication#custom-authentication-providers) extension point, which is about logging in with an existing external identity, not self-registration.
+:::
 
 ### Require Email Verification
 
-The system automatically sends a verification email containing a secure verification link, which:
-1. Contains unique token
-2. Has expiration time
-3. Single-use only
+When email registration requires verification, Shesha emails the user a single-use link containing a unique token with an expiration time.
 
- ![Verification](images/registration/verification-link.png)
+![Verification](images/registration/verification-link.png)
 
 ### User Email as Username
 
-The `UserEmailAsUsername` setting determines whether the system uses the user's `email address` as their `username` for authentication purposes. 
-- When **false**: Enables separate username field
-- Enforces username uniqueness checks
-- When **true**: Uses email as username
+Controls whether the user's email address doubles as their login username.
+
+| Value | Behaviour |
+|---|---|
+| `false` | The user sets a separate username, and Shesha enforces that it's unique. |
+| `true` | The user's email address is also their username. |
 
 ### Go to URL After Registration
 
-- Defines the URL to which the user will be redirected after successful registration. This ensures a seamless transition to the next step in the user journey.
+The URL the user is redirected to once registration succeeds.
 
 ### Additional Registration Information
 
-Defines a form for capturing extra details beyond basic user information. If enabled, the user must complete this form before completing the registration process.
-> _**NOTE**: If this option is selected then the registration process will be placed on draft until the form information has been completed and an additional endpoint (**`/api/services/app/UserManagement/CompleteRegistration`**) to finalize the registration has been actioned.
-> **If this has not been actioned then the user will be redirected to complete the `Additional Registration Information` form upon login.**
+Configures a form for capturing extra details beyond the basic registration fields. When set, the new account stays incomplete until that form is submitted.
 
+:::note
+While a registration is incomplete, logging in redirects the user straight to the Additional Registration Information form instead of the application. Submitting that form calls `POST /api/services/app/UserManagement/CompleteRegistration` to finalize the account - if the user closes the form without submitting, they're sent back to it the next time they log in.
+:::
 
-## Process Flow
+---
 
-[![](https://mermaid.ink/img/pako:eNqtVF1T4jAU_St38owOhVG0DzujIIoCIl_ObuEhtgEytgmbprpuy3_fm6QoHfVteeiQ3HPuufckNzkJZcSIT9aKbjcw7SwE4O8i6EsaQV-uuYCuVMkSjo5-wGXe3rDwGVKmNRfrFFZSQZptt1JpFoFia55qRTWXAhKmNzLauXyXhl4M7BZMWMxCxBfQDiYb-QrjQ16fi-elY7WtaCd3BHB0H-6nI0Ddq4TyGOZM8RUPLbcUc9-OlTRYxyvgyqmZrUmoGBOlzJWV6aKMiGxUSxjIJx6zd5kyc9e1YWMFXAdfMIZZ8sTU8hBvMxRwU4G76i-iSLE0LeHXtpBeMEuZAiY0U-m-WcV-ZyzVKVAh9QbDo96wZN04llv07OI2mNOYR1Qzwy9xt7aYMmCcnmRhiOIF3AVD-sLXBo6VVU5jRNds-dnWz94X0Hf2upA5xUq8annfljlwjlRglvjCqctTwgcWPvzoyokgfMwirvByILVS5vC_NHtnde8rB1Jh9AROQEIP5O8tZZR_B9sXssr2l2pkS_3JsLaHHC8ENzAafytUoQ1lAePghooI716F0UWHMlXt58FyPuZvUvHiQPuwYDv-h_yh1AczPA2upWHPxn2gK7SoUkZFfmK9mQUmI7Rlso0ZpighMxucB_v9r9LMLWb6qSV4zG3Ongj3bOv0U2rGRmj3kJXGPdom9hfHlP4uaZKgKwtBaiRhaACP8GnMDW9BcOwStiA-_o3YimaxXpCF2CGUZlpO3kRIfK0yViNKZusN8Vc0TnGVbc2V7XCKT2zyvrul4peUyZ6CS-Ln5A_xG_Wz47Mz7_SkUW-c1Jut81aNvBH_yGvVG8etess7r3sN79RrtHY18temaB7jLgJPvHOvWT9tNWsEu9NSDdzbbp_43T8Jdeoq?type=png)](https://mermaid.live/edit#pako:eNqtVF1T4jAU_St38owOhVG0DzujIIoCIl_ObuEhtgEytgmbprpuy3_fm6QoHfVteeiQ3HPuufckNzkJZcSIT9aKbjcw7SwE4O8i6EsaQV-uuYCuVMkSjo5-wGXe3rDwGVKmNRfrFFZSQZptt1JpFoFia55qRTWXAhKmNzLauXyXhl4M7BZMWMxCxBfQDiYb-QrjQ16fi-elY7WtaCd3BHB0H-6nI0Ddq4TyGOZM8RUPLbcUc9-OlTRYxyvgyqmZrUmoGBOlzJWV6aKMiGxUSxjIJx6zd5kyc9e1YWMFXAdfMIZZ8sTU8hBvMxRwU4G76i-iSLE0LeHXtpBeMEuZAiY0U-m-WcV-ZyzVKVAh9QbDo96wZN04llv07OI2mNOYR1Qzwy9xt7aYMmCcnmRhiOIF3AVD-sLXBo6VVU5jRNds-dnWz94X0Hf2upA5xUq8annfljlwjlRglvjCqctTwgcWPvzoyokgfMwirvByILVS5vC_NHtnde8rB1Jh9AROQEIP5O8tZZR_B9sXssr2l2pkS_3JsLaHHC8ENzAafytUoQ1lAePghooI716F0UWHMlXt58FyPuZvUvHiQPuwYDv-h_yh1AczPA2upWHPxn2gK7SoUkZFfmK9mQUmI7Rlso0ZpighMxucB_v9r9LMLWb6qSV4zG3Ongj3bOv0U2rGRmj3kJXGPdom9hfHlP4uaZKgKwtBaiRhaACP8GnMDW9BcOwStiA-_o3YimaxXpCF2CGUZlpO3kRIfK0yViNKZusN8Vc0TnGVbc2V7XCKT2zyvrul4peUyZ6CS-Ln5A_xG_Wz47Mz7_SkUW-c1Jut81aNvBH_yGvVG8etess7r3sN79RrtHY18temaB7jLgJPvHOvWT9tNWsEu9NSDdzbbp_43T8Jdeoq)
+## Registration Flow
+
+1. The user submits the registration form (email or mobile number, depending on the configured method).
+2. Shesha creates the account and, if Additional Registration Information is configured, marks it incomplete.
+3. The user verifies their email or mobile number via the emailed link or SMS OTP.
+4. If Additional Registration Information was configured, the user completes that form before the account can be used - any login attempt before this redirects them back to it.
+5. The user is redirected to the configured Go to URL, with a fully active account.
+
+![Registration flow](images/registration/process-flow.png)
+
+---
+
+## Customising the Registration Form
+
+The base registration form only ever collects and saves the fields defined on the DTO behind the registration endpoint (`POST /api/services/app/UserManagement/Create`): username, password, password confirmation, first name, last name, mobile number, email address, type of account, and whether the user must change their password on first login.
+
+You can't add extra fields to this base form and have them saved automatically - the endpoint only maps the properties defined on that DTO. If you need to collect more information at signup, such as a department or a set of terms and conditions, use **Additional Registration Information** above instead. It captures that data through a separate form completed right after the base registration step, rather than extending the base form itself.
+
+---
+
+## Registering a Custom Person Entity
+
+Out of the box, self-registration always creates a base `Person` record. The registration endpoint's `CreateAsync` method is not declared `virtual`, and it's hard-wired to `IRepository<Person, Guid>` - so unlike the SMS gateway or [`IHomePageRouter`](/docs/fundamentals/how-to-change-home-page#custom-routing-per-user) extension points, there's no built-in setting or override interface that lets self-registration create a subclass of `Person` instead.
+
+If your application needs self-registered users to end up as a custom `Person` subclass, this isn't a supported customisation point today. Replacing the built-in `IUserManagementAppService` implementation to change this behaviour would be a much larger change than the other extension points on this page, and isn't officially documented - treat it as an open gap rather than something to attempt without further guidance.

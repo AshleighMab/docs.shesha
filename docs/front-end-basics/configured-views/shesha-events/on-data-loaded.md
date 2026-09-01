@@ -1,24 +1,30 @@
-# On Data Loaded
+---
+sidebar_label: On Data Loaded
+title: On After Data Load
+---
 
-This is an event that occurs when data has been loaded or retrieved for a specific entity or record, and the details view is being populated with that data. It's a point in the lifecycle of the details view where you can perform actions or logic that depend on the successful loading of data.
+# On After Data Load
 
-- **Benefit 1: Asynchronous Data Handling:**
-
-  - The `OnDataLoaded` event handler is valuable for handling asynchronous data loading processes. It provides a designated point in the application's lifecycle to respond to successful data retrieval, ensuring that subsequent actions are taken when the data is available.
-
-- **Benefit 2: UI Updates:**
-
-  - After data is loaded, the event handler allows you to update the user interface to reflect the loaded data. This can include populating UI elements, displaying relevant information, or triggering additional actions based on the retrieved data.
-
-- **Benefit 3: Error Handling:**
-
-  - The event handler can also handle errors that may occur during the data loading process. This includes displaying error messages or taking alternative actions in case of data retrieval failures.
-
-- **Benefit 4: Separation of Concerns:**
-  - By providing a clear separation of concerns, the `OnDataLoaded` event handler ensures that the logic for handling data loading events is encapsulated in one place. This contributes to a modular and maintainable codebase.
-
-## Usage Example
-
-In the example below, we are using the `On Data Loaded` Event Handler to preview a toast message to inform the user of the invoice that we are currently viewing:
+Shesha's actual label for this setting is **On After Data Load** (`onAfterDataLoad`), found in the Form Settings panel's Data tab, right next to a sibling **On Before Data Load** (`onBeforeDataLoad`) setting. It's a form-level lifecycle script, not a per-component event - use it to run logic once the form's data has finished loading and has been applied to the fields.
 
 ![On Data Loaded](./images/ondataloaded.png)
+
+---
+
+## When It Fires
+
+`onAfterDataLoad` runs once each time the form loads or reloads its data - after the antd form's fields have been reset and populated with the loaded values, and after the form's data-loading state has been marked ready. `onBeforeDataLoad` fires just before that same data load starts, giving you a hook on both sides of the load.
+
+Both are declared as `async` functions, so you can `await` inside them.
+
+**Form type to use:** Edit Form or Details View - any form type where data is loaded for an existing record.
+
+**Example - Show a toast once the record has loaded:**
+
+```javascript
+message.info(`Viewing invoice ${data.invoiceNumber}`);
+```
+
+:::note
+Available inside this script are the standard script variables also used elsewhere in Shesha (`data`, `form`, `http`, `message`, `moment`, `globalState`, and others) - see [Events](/docs/front-end-basics/form-components/common-component-properties#events) in the common properties for the baseline set. At this point, `data` reflects the values just loaded onto the form.
+:::

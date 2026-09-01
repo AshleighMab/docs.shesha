@@ -1,11 +1,21 @@
+---
+sidebar_label: Table View Selector
+title: Table View Selector
+---
+
 # Table View Selector
 
-The Table View Selector component is a user interface component used for dealing with tabular or list-based data. It allows users to switch between different predefined views or filters of the data presented in a table format. This component provides a list of configurable query builders that can be used to configure the different predefined filters and views. This component should be used within a [DataTable Context Component](/docs/front-end-basics/form-components/tables-lists/datatable-context).
+The Table View Selector component lets users switch between named, predefined filters on a table, such as "My Records" or "Overdue" - instead of building a filter from scratch every time. Each named view is defined once in the designer and applied with a single click. This component must be used inside a [Data Table Context](/docs/front-end-basics/form-components/tables-lists/datatable-context) - it has nothing to select between otherwise.
 
 ![Image](../tables-lists/images/tableSelector2.png)
 
+:::note Outside a Data Table Context
+If you add this component outside a Data Table Context, the designer shows a "View: Default" placeholder in its place and flags a validation error, rather than the real view list.
+:::
 
-_Implementation can be found [here](/docs/front-end-basics/how-to-guides/filtering)._
+See [Filtering](/docs/front-end-basics/how-to-guides/filtering) for a worked example of setting up filters end to end.
+
+---
 
 ## Properties
 
@@ -13,5 +23,19 @@ The following properties are available to configure the behavior of the componen
 
 ### Common
 
-#### **Filters** `filtersList`  
-Determines whether the search input is displayed as a block-level element.
+#### **Filters** `object[]`
+
+The list of named views to offer, managed as a draggable, reorderable list - dragging an item changes where its view sits in the selector. Clicking a filter's settings icon opens a **Configure Filter** dialog with:
+
+| Field | What it does |
+|---|---|
+| Title (`name`) | The label shown for this view |
+| Tooltip | Optional hover text |
+| Permissions | Optional permission names restricting who sees this view |
+| Query builder | The visual query builder used to build the filter expression applied when this view is selected, with an accompanying expression viewer and a Variables tab documenting the `data` and `globalState` values available to it |
+
+A new Table View Selector always starts with one default filter ("Default", no expression, showing all records) so the component has something to display even before you configure it.
+
+#### **Show Icon** `boolean`
+
+Displays a layout icon next to the selected view's label.
