@@ -96,23 +96,23 @@ Each item below corresponds to the detailed section of the same number. The orde
 
 - The component registers its API via `useComponentApi()` + `updateApi(...)` and removes it on unmount.
 - Its API shape is declared in `componentsApi/componentApi.ts`, extending `CommonComponentApi` or `InputComponentApi<T>`.
+- Components are reached through **`form.components`**, addressed by camel-cased component name.
 - Standard members are inherited, not re-implemented: `componentName`, `context`, `propertyName`, `visible`, `interactionMode`, `style` (+ `value`, `required`, `focus`, `isValid`, `getErrors`, `reset` for inputs).
 - Component-specific members are registered at **`level: 3`** with matched getter/setter pairs.
 - `focus()` is wired in the component (it needs a live DOM ref), not in the common layer.
 - Every member has a **JSDoc comment**, since the file is served verbatim as IntelliSense to the JS editors.
 - Members that must not be mutated at runtime are declared `readonly`.
-- API writes may **restrict but never promote** — they cannot make a hidden component visible, cannot bypass permissions, and cannot weaken an Entity-enforced constraint.
+- API writes may set a member in either direction, but **cannot exceed the user's permissions** — a write beyond `visiblePermissions` or `editModePermissions` is refused and logged.
 
 ---
 
 ### **9. Configurable Events**
 
-- Every event the component exposes is configurable **as an action**, not only as a script.
-- Each event has an action configurator on the Events tab, directly above its code editor.
+- `onClick` and `onDoubleClick` are configured through a **configurable action**, in place of the code editor.
 - Action properties follow the `on{Event}Action` naming and are typed `IConfigurableActionConfiguration`.
 - `allowedActions` restricts the list wherever only a subset of actions is valid.
-- Both the action and the script fire, action first.
-- The arguments context carries the event payload, matching what the script path exposes.
+- A migration wraps any existing script in an `Execute Script` action, so nothing configured is lost.
+- The remaining events keep their code editors.
 
 ---
 
@@ -249,7 +249,7 @@ Two separate settings produced combinations that carry no meaning — a read-onl
 
 ### **The Interaction Mode Property**
 
-A single property, stored on `model.editMode`, replacing the old Edit Mode setting. Add it to the Main tab with the shared helper, which also places `Visible` immediately before it and attaches the JS toggle and permission padlock to both:
+A single property, stored on `model.editMode`, replacing the old Edit Mode setting. Add it to the Main tab with the shared helper. The helper adds two properties as a pair — `Visible` first, then `Interaction Mode` — and gives each of them its own JS toggle and its own permission padlock:
 
 ```ts
 .stdVisibleEditableInputs('full')      // data components
@@ -482,11 +482,7 @@ They cannot force a hidden component to become visible.
 
 ### **Where the API Sits in This Chain**
 
-The Component API is subject to the same restriction principle. A script may make a component more restricted, never less:
-
-- `visible = false` is honoured. `visible = true` **cannot** reveal a component that configuration, JS, or permissions have hidden.
-- API writes cannot bypass `visiblePermissions` or `editModePermissions`.
-- API writes cannot weaken an Entity-enforced constraint (see Section 4).
+Permissions bound the Component API as well. A script may set `visible` or `interactionMode` in either direction — configuration is a starting state, not a ceiling — but it cannot grant more access than the user's permissions allow. A write that would exceed `visiblePermissions` or `editModePermissions` is refused.
 
 See Section 8 for the full API contract.
 
@@ -633,10 +629,9 @@ Some inheritance decisions are **group-level** — Number format, Num decimal pl
 
 ### **Inheritance and the Component API**
 
-Runtime writes through the Component API are bound by the same rules:
+The inheritance types above govern **design-time configuration**. They are not enforced against runtime writes through the Component API — a property's value alone carries no information about which direction is more restrictive, and encoding that per property would complicate every component without a clear benefit.
 
-- A write to an **Entity-enforced** property may only narrow the constraint. A component exposing `min` or `max` through its API must validate that the incoming value tightens rather than widens the entity's bound, and reject the write otherwise.
-- A write is a **transient runtime value**, not an explicit override. It must not permanently detach the property from inheritance — a subsequent entity change still propagates to a property that was never explicitly overridden in the designer.
+A runtime write is a **transient value**, not an explicit override. It must not permanently detach the property from inheritance: a subsequent entity change still propagates to a property that was never explicitly overridden in the designer.
 
 ### **Developer Pre-QA Summary**
 
@@ -798,7 +793,7 @@ Before sending to QA, developers must confirm:
 
 Every component exposes a small, predictable API so that scripts elsewhere on the form — event handlers, configured actions, JS settings — can read and change it at runtime without reaching into internals.
 
-The API is deliberately narrow. Shesha's primary mechanism for controlling a form remains **state management** through the model, data and contexts: a JS setting that reads `contexts.formContext.someFlag` recalculates whenever that flag changes, which is more predictable than one-off imperative writes. The Component API exists for the cases where addressing a specific component directly is genuinely clearer, not as a replacement for state-driven configuration.
+The API is deliberately narrow. Shesha's primary mechanism for controlling a form remains **state management** through the model, data and contexts: a JS setting that reads `form.context.someFlag` recalculates whenever that flag changes, which is more predictable than one-off imperative writes. The Component API exists for the cases where addressing a specific component directly is genuinely clearer, not as a replacement for state-driven configuration.
 
 ### **Core Requirement**
 
@@ -813,17 +808,17 @@ A refactored component must:
 
 ### **Accessing Components from a Script**
 
-Components are addressed by **component name**, camel-cased:
+Components are reached through `form.components`, addressed by **component name**, camel-cased:
 
 ```ts
-components.textField1.value = String(components.decimal.value);
-components.decimal.style.background = { color: 'red' };
-message.info(`Checkbox1.value: ${components.checkbox1.value}`);
+form.components.textField1.value = String(form.components.decimal.value);
+form.components.decimal.style.background = { color: 'red' };
+message.info(`Checkbox1.value: ${form.components.checkbox1.value}`);
 ```
 
 The surface is **property assignment**, not setter methods. Methods exist only for actions — `focus()`, `click()`, `reset()`, `expand()`, `collapse()`.
 
-The root is `components`, separate from `form`, which is the Form API.
+`components` sits under `form` alongside the rest of the Form API, so a script reaches everything about the current form from one root. Contexts follow the same shape — `form.context` rather than `contexts.formContext`.
 
 ---
 
@@ -863,18 +858,18 @@ The API does not provide `setErrors()` or `clearErrors()`. `Antd.Form` offers no
 
 ---
 
-### **Restriction, Never Promotion**
+### **Permissions Are the Only Boundary**
 
-The API obeys the same principle as permissions (Section 3). A script may make a component more restricted; it may not loosen a restriction imposed by configuration, logic, or permissions.
+A script may set a writable member to any value, in either direction. Configuration is a starting state, not a ceiling — a component configured hidden can be revealed by a script once the data it depends on has loaded, and a component configured read-only can be made editable. That is the point of having an API.
 
-- `visible = false` is honoured.
-- `visible = true` **cannot** reveal a component hidden by its configuration, by a JS setting, or by permissions. The write is refused.
+The one thing a script cannot do is exceed the user's permissions:
+
 - API writes cannot bypass `visiblePermissions` or `editModePermissions`.
-- API writes must not weaken an Entity-enforced constraint (Section 4).
+- A write that would grant more access than the user's permissions allow is refused, and the effective state stays within those permissions.
 
-Apply this consistently across every writable member, not only `visible`. A setter that accepts a promoting write on one property and refuses it on another is worse than either rule applied uniformly, because the configurator cannot predict which they are dealing with.
+Apply the permission check consistently across every writable member. A setter that enforces permissions on one property but not another is worse than either behaviour applied uniformly, because the configurator cannot predict which they are dealing with.
 
-A write that is refused must be **logged with the context required by Section 10**. A configurator whose script appears to do nothing has no other way to find out why.
+A write refused on permission grounds must be **logged with the context required by Section 10**. A configurator whose script appears to do nothing has no other way to find out why.
 
 ---
 
@@ -954,26 +949,22 @@ The standard event set is defined once in `designer-components/_common/events.ts
 - The settings form advertises the events: `stdEventHandlers([...ALL_INPUT_EVENTS], DataTypes.number)`
 - The runtime binds them: `getComponentEvents(model, ALL_INPUT_EVENTS_WITHOUT_CHANGE, ctx, value, DataTypes.number)`
 - **`onChange` is bound inline by each component**, not by `getComponentEvents`, because it also updates the component's value.
-- Use the shared constants at both call sites. **A settings form that advertises an event the runtime never binds produces a handler the configurator can write and save but which silently never fires.**
-- Components that deliberately omit double-click use the `..._WITHOUT_DOUBLE_CLICK` pair.
+- Draw both call sites from the **same constant**. A component that supports a narrower set uses the matching pair, such as `..._WITHOUT_DOUBLE_CLICK`. **A settings form that advertises an event the runtime never binds produces a handler the configurator can write and save but which silently never fires.**
 
 Note that `onHover` and `onKeyPress` are **not** available: HTML has no hover event (use `onMouseEnter`/`onMouseLeave`, with `onMouseMove` where continuous tracking is genuinely needed) and `onKeyPress` is deprecated (use `onKeyDown`/`onKeyUp`).
 
-Each of these events must also be configurable as an action — see Section 9.
+`onClick` and `onDoubleClick` are configured as actions rather than scripts — see Section 9.
 
 ---
 
 ### **Component Names as API Identifiers**
 
-Components are addressed by name, so names must behave like identifiers. They are camel-cased on registration.
+Components are addressed by name. The framework handles the conversion for you and no component-level work is required:
 
-Requirements:
+- Characters that cannot appear in an identifier are stripped, and the name is converted to camelCase. This is deliberate — it keeps existing forms working rather than invalidating them.
+- Where two components resolve to the same name, one is exposed through the API and a warning is written to the browser console.
 
-- A component's name must survive camel-casing into a usable identifier. Names carrying characters that cannot appear in an identifier — such as those produced by some form templates — are a misconfiguration.
-- **Names must be unique within a form.** Two components sharing a name cannot both be addressed, and camel-casing can itself collapse two visibly different names into the same identifier.
-- An invalid or duplicated name must be surfaced as a misconfiguration under Section 7 — an icon on the component and a red highlight on the property in the Properties Panel. A browser console warning alone is not sufficient, because the configurator never sees it.
-
-An unaddressable component has no API, so this is a precondition rather than a refinement.
+A component name that reads awkwardly through the API affects only the API. It does not affect the component's behaviour anywhere else in the system, so it is not treated as a misconfiguration.
 
 ---
 
@@ -988,51 +979,48 @@ Before handing off to QA, developers must confirm:
 5. **`focus()` is wired in the component** where the component can receive focus.
 6. **Getter/setter pairs are complete and dependency-correct** — no stale reads, and read-only members expose a getter only.
 7. **Style mutation goes through `style`** and its grouped sub-objects, never through a flattened first-level property.
-8. **IntelliSense resolves in the JS editors** — the component appears in autocomplete under `components.`, and its members and their descriptions appear correctly.
-9. **The settings form and runtime event lists match**, both drawn from the shared constants in `_common/events.ts`.
+8. **IntelliSense resolves in the JS editors** — the component appears in autocomplete under `form.components.`, and its members and their descriptions appear correctly.
+9. **The settings form and runtime event lists match**, both drawn from the same constant in `_common/events.ts`.
 10. **`onChange` is bound inline** and updates the component's value.
-11. **API writes cannot promote** — a hidden component cannot be revealed, permissions cannot be bypassed, Entity-enforced constraints cannot be weakened.
+11. **API writes respect permissions** — a write that would exceed `visiblePermissions` or `editModePermissions` is refused and logged.
 12. **Errors in scripts using the API are logged with the context required by Section 10**, including the event name.
 
 ## 9. Configurable Events
 
-
 ### **Purpose of the Feature**
 
-Every event a component exposes must be configurable **as an action**, in the same way a Button's *On Click* is configured — not only as a JavaScript snippet.
+`onClick` and `onDoubleClick` must be configured through a **Configurable Action**, in the same way a Button's *On Click* is — not through a bare code editor.
 
-Writing a script requires a developer. Selecting an action does not, and Shesha's configuration experience is aimed at non-technical users. An action is also structured rather than free text, so it can be validated in the designer and it names itself in the log when it fails.
+Writing a script requires a developer. Selecting an action does not, and Shesha's configuration experience is aimed at non-technical users. An action is also structured rather than free text, so it names itself in the log when it fails.
+
+Nothing is lost by the change, because **`Execute Script` is itself a Configurable Action**. A configurator who needs a script still writes one; it is simply reached through the action picker alongside every other option.
 
 ### **Core Requirement**
 
-For each event in the component's standard event set, the settings form offers **both**:
+For `onClick` and `onDoubleClick`, the settings form offers a **configurable action** in place of the code editor. The action property holds an `IConfigurableActionConfiguration`.
 
-- an **action configurator**, holding an `IConfigurableActionConfiguration`
-- the existing **code editor**, holding a script
-
-Both fire when the event occurs. The action runs first, then the script.
+The remaining events — `onChange`, `onFocus`, `onBlur`, `onMouseEnter`, `onMouseMove`, `onMouseLeave`, `onKeyDown`, `onKeyUp` — keep their code editors. They fire with a payload the current action set has no standard way to receive, and most of them need that payload to be inspected before anything useful can be decided, so an action list adds nothing for them today.
 
 ### **Property Naming**
 
-The script property keeps its existing name. The action property takes the event name with an `Action` suffix, so the two sit side by side and neither collides:
+The action property takes the event name with an `Action` suffix:
 
-| Event | Script property | Action property |
-|---|---|---|
-| `onChange` | `onChangeCustom` | `onChangeAction` |
-| `onClick` | `onClickCustom` | `onClickAction` |
-| `onBlur` | `onBlurCustom` | `onBlurAction` |
+| Event | Action property |
+|---|---|
+| `onClick` | `onClickAction` |
+| `onDoubleClick` | `onDoubleClickAction` |
 
-Declare the action property on the component's props interface as `IConfigurableActionConfiguration | undefined`.
+Declare it on the component's props interface as `IConfigurableActionConfiguration | undefined`.
 
 ### **Adding It to the Settings Form**
 
-Add the action configurator on the Events tab, immediately above the matching code editor:
+Add the action configurator on the Events tab, in the position the code editor previously occupied:
 
 ```ts
 .addConfigurableActionConfigurator({ propertyName: 'onClickAction', label: 'On Click' })
 ```
 
-Where only a subset of actions makes sense for an event, restrict the list rather than leaving the configurator to choose something that cannot work:
+Where only a subset of actions makes sense, restrict the list rather than leaving the configurator to choose something that cannot work:
 
 ```ts
 .addConfigurableActionConfigurator({
@@ -1044,7 +1032,7 @@ Where only a subset of actions makes sense for an event, restrict the list rathe
 
 ### **Executing the Action**
 
-Use the dispatcher, and pass the event payload so the action's arguments can reference it:
+Use the dispatcher, and pass the available constants so the action's arguments can be evaluated:
 
 ```ts
 const { executeAction } = useConfigurableActionDispatcher();
@@ -1054,32 +1042,28 @@ const onClick = (event: SyntheticEvent): void => {
   if (isDefined(model.onClickAction))
     executeAction({
       actionConfiguration: model.onClickAction,
-      argumentsEvaluationContext: { ...allData, event, value },
+      argumentsEvaluationContext: { ...allData, event },
     }).catch((error: unknown) =>
       console.error(`${formName} | ${model.componentName} | 'onClick' action failed`, error));
-
-  ctx?.handleEvent(event, { value }, model.onClickCustom, 'onClick');
 };
 ```
 
-The arguments context must carry the same values the script path exposes for that event — at minimum `event` and `value` — so a configurator who switches an event from a script to an action does not lose access to the data they were using.
-
 ### **Migrations**
 
-The action property is new, so add a **new migration version**; do not amend an existing one. Existing components need no data migration, since an absent action configuration simply means no action runs.
+An existing `onClickCustom` script is not discarded. Add a **new migration version** that wraps it in an `Execute Script` action and writes it to `onClickAction`, so forms configured before the change keep working without the configurator touching them.
 
 ### **Developer Pre-QA Summary**
 
 Before handing off to QA, developers must confirm:
 
-1. **Every event in the component's event set has an action configurator** on the Events tab, alongside its code editor.
+1. **`onClick` and `onDoubleClick` are configured through an action configurator**, not a code editor.
 2. **Action properties follow the `on{Event}Action` naming**, and are typed `IConfigurableActionConfiguration | undefined`.
-3. **The action configurator sits directly above its matching code editor**, so the pairing is obvious.
-4. **`allowedActions` is set** wherever only a subset of actions is valid for that event.
-5. **The action and the script both fire**, action first.
-6. **The arguments context carries the event payload** — the same values the script path exposes.
+3. **`allowedActions` is set** wherever only a subset of actions is valid for that event.
+4. **`Execute Script` is reachable** from the action picker, so a configurator who needs a script is not blocked.
+5. **The arguments context carries the event**, so action arguments can reference it.
+6. **A migration converts any existing script** into an `Execute Script` action — no configured behaviour is lost.
 7. **A failing action is logged with the context required by Section 10**, including the event name.
-8. **A new migration version was added** for the new properties.
+8. **The remaining events keep their code editors** and continue to work as before.
 
 ## 10. Runtime Error Diagnostics
 
@@ -1246,4 +1230,3 @@ Before handing to QA, developers must confirm:
 4. **Line updates dynamically as the user moves the component around.**
 5. **Drop indicator disappears immediately once the component is released.**
 6. **Inserted component appears exactly where the indicator line was shown.**
-
